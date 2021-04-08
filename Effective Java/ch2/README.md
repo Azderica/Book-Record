@@ -87,4 +87,115 @@ StackWalker luke = StackWalker.getInstance(options);
 
 ## 생성자 매개 변수가 많은 경우, 빌더를 고려
 
+Static factories 와 생성자는 제한을 고유하므로, 잘 확장되지 않는다.
+
+### telescoping constructor 패턴
+
+- 생성자에 필수 매개 변수만 제공하고, 다른 하나에는 단일 선택적 매개 변수, 다른 하나는 두 개의 선택적 맥개 변수가 있는 등의 방식으로 생성자를 제공하는 패턴입니다.
+
+```java
+public NutritionFacts (int servingSize, int servings) { ... }
+public NutritionFacts (int servingSize, int servings, int calories) { ... }
+public NutritionFacts (int servingSize, int servings, int calories, int fat) { ... }
+public NutritionFacts (int servingSize, int servings, int calories, int fat, int sodium) { ... }
+```
+
+- 텔레 스코핑 생성자 패턴은 작동하지만 매개 변수가 많으면 클라이언트 코드를 작성하기 어렵고 여전히 읽기가 더 어렵습니다.
+
+### JavaBeans 패턴
+
+이를 해결하는 방법은 setter 메소드 호출(`JavaBeans 패턴`)입니다. (이 경우는 텔레 스코핑 생성자 패턴을 해결하기에는 유리하나 단점입니다.)
+
+- 불일치를 허용하고 가변성을 요구
+
+```java
+@Setter
+@Getter
+public class NutritionFacts {
+  private int servingSize = -1; // 필수; 기본값 없음
+  private int servings = -1; // 필수; 기본값 없음
+  private int calories = 0;
+  private int fat = 0;
+  private int sodium = 0;
+}
+```
+
+- JavaBeans 패턴은 구성이 여러 호출로 분할되기 때문에 JavaBean은 구성 과정에서 일관성없는 상태에 있을 수 있습니다.
+  - 유효성을 확인하는 것으로 일관성을 유지할 수 있는 옵션이 따로 없습니다.
+  - 클래스를 불변으로 만들 가능성을 배제하고 스레드 안전성을 보장하기 위해 노력이 필요합니다.
+
+### Builder 패턴
+
+텔레 스코핑 생성자 패턴의 안전성 + JavaBeans 패턴의 가독성을 결합
+
+- 클라이언트는 필요한 모든 매개 변수를 사용하여 생성자 (또는 정적 팩토리)를 호출하고 빌더 객체를 가져옴
+- 그런 다음 클라이언트는 빌더 개체에서 setter와 유사한 메서드를 호출하여 관심있는 각 선택적 매개 변수를 설정함
+- 클라이언트는 매개 변수가없는 build메서드를 호출하여 일반적으로 변경할 수없는 개체를 생성함
+
+```java
+public class NutritionFacts {
+  private final int servingSize;
+  ...
+
+  public static class Builder {
+    // 필수 매개 변수
+    private final int servingSize;
+
+    // 선택적 매개 변수-기본값으로 초기화
+    private int calories = 0;
+    private int fat = 0;
+    private int sodium = 0;
+
+    public Builder (int servingSize, int servings) {
+      this.servingSize = servingSize;
+      this.servings = 서빙;
+    }
+    ...
+  }
+}
+
+NutritionFacts cocaCola = new NutritionFacts.Builder (240, 8)
+        .calories (100) .sodium (35) .carbohydrate (27) .build ();
+
+```
+
+- 해당 코드는 작성하기 쉽고 읽기 쉽습니다.
+  - 스프링은 `@Builder` 어노테이션이 있습니다.
+
+```java
+// 클래스 계층 구조를위한 빌더 패턴
+
+public abstract class Pizza {
+  public enum Topping {HAM, MUSHROOM, ONION, PEPPER, SAUSAGE}
+  final Set <Topping> toppings;
+
+  abstract static class Builder <T extends Builder <T >> {
+    EnumSet <Topping> toppings = EnumSet.noneOf (Topping.class);
+
+    public T addTopping (Topping topping) {
+     toppings.add (Objects.requireNonNull (topping));
+      return self ();
+    }
+
+    abstract Pizza build ();
+
+    // Subclasses must override this method to return "this"
+    protected abstract T self ();
+  }
+
+  Pizza(Builder<?> builder) {
+    toppings = builder.toppings.clone(); // See Item  50
+  }
+}
+```
+
+다음과 같이 추상 self메서드 와 함께 메서드 체이닝이 캐스트 없이도 하위 클래스에서 제대로 작동합니다. 따라서 아래의 장점을 가집니다.
+
+- 빌더 패턴은 매우 유연합니다. (반복 사용을 통해 여러 개체를 빌드할 수 있음)
+
+다만, 이러한 단점이 있습니다.
+
+- 개체를 만들기 위해서는 작성기를 만들어야 하기 때문에, 만드는 비용 및 성능이 중요한 상황에서 문제가 될 수 있습니다. (처음부터 시작하는 경우에 빌더를 선택하면 좋습니다.)
+
+따라서 **빌더 패턴은 생성자 또는 정적 팩토리에 소수 이상의 매개 변수가 있는 클래스를 디자인할 때 장점**을 가집니다.
 <br/>
