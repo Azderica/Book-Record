@@ -282,7 +282,23 @@ public enum Elvis {
 
 ## private 생성자를 통해 noninstantiability(비인스턴스성)을 적용합니다.
 
+- `java.lang.Math` 나 `java.util.Arrays`, `java.util.Colletions` 와 같은 유틸리티 클래스는 인스턴스화되도록 설계되어 있지 않습니다.
 
+- 추상 클래스를 만들어서 noninstantiability를 적용하려는 것은 동작하지 않습니다. 
+- 다만 기본 생성자는 클래스에 명시적 생성자가 없는 경우에 생성되므로, private constructor을 포함함으로서 class를 noninstantiable 상태로 만들 수 있습니다.
+
+```java
+// Noninstantiable utility class
+public class UtilityClass {
+  // Suppress default constructor for noninstantiability
+  private UtilityClass () { throw new AssertionError(); }
+  ...
+}
+```
+
+- explict constructor(명시적 생성자)는 private 이므로, 외부에서 접근할 수 없습니다.
+- `AssertionError()` 는 생성자가 실수로 클래스 내에서 호출되는 경우에 보험을 제공합니다. 즉, 어떤 상황에서도 클래스가 인스턴스화 되지않음을 보장합니다.
+- 다만, 이러한 방법은 클래스가 하위 클래스로 분류되는 것을 방지합니다. 즉, 서브 클래스에는 호출할 액세스 가능한 super class 생성자가 없습니다.
 
 
 
@@ -290,9 +306,96 @@ public enum Elvis {
 
 ## Hardwiring 자원에 의존성 주입(Dependency Injection)을 선호합니다.
 
+많은 클래스가 하나 이상의 기본 리소스에 의존합니다.
+
+부정적인 케이스는 다음과 같습니다.
+
+```java
+// 유연하지 않고, 테스트할 수 없는 잘못 사용된 유틸리티
+public class SpellChecker {
+  private static final Lexicon dictionary = ...;
+  private SpellChecker () {} // Noninstantiable
+  public static boolean isValid (String word) { ... }
+  public static List<String> suggests(String typo) {...}
+}
+```
+
+- 즉, Static utility classes 와 싱글톤은 기본 리스스에 의해 동작이 매개변수화 된 클래스에 적합하지 않습니다.
+- 따라서 이를 해결하는 패턴은 **새 인스턴스를 만들때, 생성자에 리소스를 전달하는 방법**입니다. (DI, Dependency Injection)
+
+```java
+// Dependency injection provides flexibility and testability
+public class SpellCheker {
+  private final Lexicon dictionary;
+  public SpellChecker(Lexicon dictionary) {
+    this.dictionary = Objects.requireNonNull(dictionary);
+  }
+  public boolean isValid(String word) { ... }
+  public List<String> suggestions(String typo) { ... }
+}
+```
+
+Dependency Injection Pattern(의존성 주입 패턴)은 다음의 장점을 가집니다.
+
+- immutabiliy(불변성)을 보존합니다.
+- resource factory를 전달함으로서 패턴을 변경할 수 있습니다. (**Fractory Method Pattern**)
+  - 자바8에 도입된 `Supplier<T>` 인터페이스는 Factories를 표현하는데 효과적입니다.
+  - `Supplier<T>` 메소드는 `bounded wildcard type(제한된 와일드카드 유형)` 을 사용해서 팩토리의 매개변수를 제한하여, 클라이언트가 지정된 유형의 하위 유형의 생성하는 팩토리를 전달해야합니다.
+
+```java
+Mosaic create(Supplier<? extends Tile> tileFactory)
+```
+
+결론적으로는 **singleton 이나 static utility class를 사용하여 하나 이상의 기본 리소스에 의존하는 클래스를 구현하지 않고, 클래스가 이러한 리소스를 직접 생성하지 않도록 설정**해야합니다. 대신에, Resource 또는 Factory를 통해서 생성자에 전달해야합니다. (또는 static factory 나 builder) **DI를 통해서 클래스의 유연성과 재사용성, 테스트 기능을 향상** 시킬 수 있습니다.
+
 <br/>
 
 ## 불필요한 객체를 생성하는 것을 줄입니다.
+
+필요할때마다 기능적으로 동등한 새 객체를 만드는 것보다 단일 객체를 재사용하는 것이 적절합니다.
+
+- 나쁜 케이스 : `String s = new String("clothes")`
+
+좀 더 개선하면 다음과 같습니다.
+
+- `String s = "clothes"`
+
+`static factory method` 를 사용하면, 불필요한 객체 생성을 피할 수 있습니다. 따라서 다음과 같이 작성하여 성능이 향상 가능합니다.
+
+```java
+// 성능 향상 가능.
+static boolean isRomanNumeral (String s) {
+  return s.matches("^(?=.)M*(C[MD]|D?C{0,3})" + "(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})$");
+}
+```
+
+- 다만 문자열이 정규식과 일치하는지 확인하는 가장 쉬운 방법이지만  String.matches` 성능이 중요한 상황에서 반복적으로 사용하기에는 적합하지 않습니다. 이를 개선하면 아래처럼 바뀝니다.
+
+```java
+// 성능 향상을 위해 값 비싼 객체 재사용합니다.
+public class RomanNumerals { 
+  private static final Pattern ROMAN = Pattern.compile (
+    "^ (? =.) M * (C [MD] | D? C {0,3})" + "( X [CL] | L? X {0,3}) (I [XV] | V? I {0,3}) $ "
+  ); 
+
+  static boolean isRomanNumeral (String s) { 
+    return ROMAN.matcher (s) .matches (); 
+	}
+}
+```
+
+- 이러한 버전은 isRomanNumeral을 자주 호출할 경우 높은 성능을 얻으며, 명확성도 향상되었고 사용자가 보기 쉽습니다.
+
+Autoboxin는 애매하지만, primitive 와 boxed primitive types간의 구분을 없애버리지는 않습니다. 이러한 잘못된 사용은 속도를 느리게 만듭니다. 따라서, boxed primitives 보다, primitive를 선호하고 의도하지 않은 오토 박싱을 조심해야합니다.
+
+```java
+private static long sum() {
+  Long sum = 0;
+  for(long i=0; i <= Integer.MAX_VALUE; i++)	// 느리게 만들어버림.
+    sum += i;
+  return sum;
+}
+```
 
 <br/>
 
