@@ -44,6 +44,8 @@ StackWalker luke = StackWalker.getInstance(options);
 
 - 서비스 액세스 API는 공급자가 제공하는 것보다 더 풍부한 서비스 인터페이스를 클라이언트에 반환 가능 (`Bridge 패턴`)
 
+
+
 ### 정적 팩토리 메서드의 단점
 
 #### 1. public 또는 protected 생성자가 없는 클래스는 하위 클래스화 할 수 없다.
@@ -55,6 +57,8 @@ StackWalker luke = StackWalker.getInstance(options);
 
 - API 문서에서 눈에 띄지 않습니다.
 - 생성자가 수행하므로 생상자 대신 정적 팩토리 메서드를 제공하는 클래스를 인스턴스화 하는 방법을 파악하기 어렵습니다.
+
+
 
 ### 대표적 팩토리 메서드
 
@@ -104,6 +108,8 @@ public NutritionFacts (int servingSize, int servings, int calories, int fat, int
 
 - 텔레 스코핑 생성자 패턴은 작동하지만 매개 변수가 많으면 클라이언트 코드를 작성하기 어렵고 여전히 읽기가 더 어렵습니다.
 
+
+
 ### JavaBeans 패턴
 
 이를 해결하는 방법은 setter 메소드 호출(`JavaBeans 패턴`)입니다. (이 경우는 텔레 스코핑 생성자 패턴을 해결하기에는 유리하나 단점입니다.)
@@ -125,6 +131,8 @@ public class NutritionFacts {
 - JavaBeans 패턴은 구성이 여러 호출로 분할되기 때문에 JavaBean은 구성 과정에서 일관성없는 상태에 있을 수 있습니다.
   - 유효성을 확인하는 것으로 일관성을 유지할 수 있는 옵션이 따로 없습니다.
   - 클래스를 불변으로 만들 가능성을 배제하고 스레드 안전성을 보장하기 위해 노력이 필요합니다.
+
+
 
 ### Builder 패턴
 
@@ -205,9 +213,78 @@ public abstract class Pizza {
 
 ## private 생성자 또는 열거형을 통해 싱글 톤 속성을 적용
 
+singleton은  정확하게 한번만 인스턴스화 되고, stateless 또는 unique한 시스템 컴포넌트입니다.  **클래스를 싱글톤으로 만들면, 클라이언트 테스트가 어려울 수 있습니다.** 왜냐하면 해당 유형으로 사용되는 인터페이스를 구현하지 않는 이상에 싱글톤을 mock으로 구현할 수 없기 때문입니다.
+
+일반적으로 싱글톤을 구현하는 방법에 따라 구분할 수 있습니다.
+
+### 1. public final field를 통한 singleton 구현
+
+```java
+// public final field가 있는 singleton
+public class Elvis {
+  public static final Elvis INSTANCE = new Elvis();
+  private Elvis() {...}
+  
+  public void leaveTheBuilding() { ... }
+}
+```
+
+- private 생성자는 public static final 필드를 초기화하기 위해 한번만 호출되며, Elvis.INSTANCE는 public, protected 생성자가 없기 때문에 monoelvistic(단일성)이 보장됩니다.
+- `public final field`는 해당 장점을 가집니다.
+  - API가 클래스가 싱글톤임을 명확하게 합니다.
+  - 퍼블릭 정적 필드는 최종이므로 항상 동일한 객체 참조를 포함합니다.
+  - 매우 간단합니다.
+
+### 2. 정적 팩토리를 통한 싱글톤
+
+```java
+// Singleton with static factory
+public class Elvis {
+  private static final Elvis INSTANCE = new Elvis();
+  private Elvis() { ... }
+	public static Elvis getInstance() { return INSTANCE; }
+  
+  public void leaveTheBuilding() { ... }
+}
+```
+
+- `Elvis.getInstance` 을 사용하는 모든 호출은 동일한 객체 참조를 반환하고, 다른 Elvis 인스턴스는 생성되지 않습니다.
+- 정잭 팩토리의 장점은 아래와 같습니다.
+  - API를 변경하지 않고도 클래스가 싱글톤인지 여부에 대해 바꿀 수 있는 유연성을 제공합니다.
+  - 애플리케이션에서 필요한 경우, `genericwe singleton factory` 를 작성할 수 있습니다.
+  - `method reference(메소드 참조)` 를  supllier(공급자)로 사용할 수 있습니다.
+
+그러나 1번이나 2번의 접근 방식은 싱글톤은 `serializabe(직렬화)`  하는 경우에는 `implements Serializable` 만으로는 충분하지 않기 때문에 모든 인스턴스 필드(`transient`)를 선언하고 `readResolve` 메소드를 제공해야합니다.
+
+```java
+// 싱글톤 속성을 보존하는 readResolve 메서드
+private Object readResolve () {
+  // true Elvis를 반환하고 가바지 커렉터가 Elvis의 복사품을 처리합니다.
+  return INSTANCE;
+}
+```
+
+### 3. 단일 요소 열거 형 선언
+
+```java
+// Enum sigleton - the preferred approach
+public enum Elvis {
+  INSTANCE;
+  
+  public void leaveTheBuilding() { ... }
+}
+```
+
+- public field 접근 방식과 유사하지만 더 **간결하고 직렬화를 제공**합니다.
+- 종종 singleton을 구현하는 가장 좋은 방법입니다.
+
 <br/>
 
 ## private 생성자를 통해 noninstantiability(비인스턴스성)을 적용합니다.
+
+
+
+
 
 <br/>
 
