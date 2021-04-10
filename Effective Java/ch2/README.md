@@ -401,6 +401,177 @@ private static long sum() {
 
 ## 사용하지 않는 개체의 참조를 제거합니다.
 
+흔히. 가비지컬렉터를 사용하는 언어의 경우에는 메모리 관리에 대해 생각할 필요가 없다고 생각을 하지만 그렇지 않습니다.
+
+### 메모리 낭비의 원인 1 - 미 참조
+
+다음은 간단하게 스택을 구성한 코드입니다.
+
+```java
+public class Stack {
+  private Object[] elements;
+  private int size = 0;
+  private static final int DEFAULT_INITIAL_CAPACITY = 16;
+  
+  public Stack() {
+    elements = new Object[DEFAULT_INITIAL_CAPACITY];
+  }
+  
+  public void push(Object e) {
+    ensureCapacity();
+    elements[size++] = e;
+  }
+  
+  public Object pop() {
+    if(size == 0) throw new EmptyStackException();
+    return elements[--size];
+  }
+  
+  private void ensureCapacity() {
+    if(elements.length == size)
+      elements = Arrays.copyOf(elements, 2 * size + 1);
+  }
+}
+```
+
+다음 코드에서 스택이 커졌다가 줄어든 경우, 프로그램에 더 이상 참조가 없더라고 스택에서 참조된 객체는 가비지 수집이 되지 않습니다.
+
+이를 수정하는 방법은 참조가 쓸모 없게 되면 **null out** 참조를 하면 됩니다.
+
+```java
+public Object pop () {
+  if(size == 0) throw new EmptyStackException();
+  Object result = elements[--size];
+  elements[size] = null;	// 사용하지 않는 참조
+  return results;
+}
+```
+
+- 객체 참조를 무효화하는 것은 표준이 아니라 예외로 처리해야합니다.
+- 클래스가 자체 메모리를 관리할 때마다 프로그래머는 메모리 누수에 대해 경고해야합니다. 해제시 개체 참조를 null로 처리해야합니다.
+
+### 메모리 낭비의 원인 2 - 캐시
+
+캐시에 넣어놓으면 참조가 있다는 사실을 이후에 잊고, 관련성이 없어진 이후에도 남아있을 확률이 높습니다. 대부분의 캐시에서 사용하는 데이터의 가치는 시간과 반비례하기 때문에 항목을 정리할 필요가 있습니다. `LinkedHashMap` 는 `removeEldestEntry` 방법을 통해서 이러한 낭비를 피하기 위해 노력합니다.
+
+### 메모리 낭비의 원인 3.  리스너 및 기타 콜백
+
+클라이언트가 콜백을 등록하지만, 명시적으로 취소하지 않으면 누적됩니다.
+
+이러한 부분을 삭제하는 방법은 `.NET Framework` 의 `WeakHashMap` 과 같습니다.
+
+
+
+**이렇듯이 메모리 낭비는 명백한 오류로 나타나지 않기 때문에, 미리 예상하고 예방하는 방법을 배우는 것이 매우 바람직합니다.**
+
 <br/>
 
 ## Finalizers(종료자)와 Cleaners(클리너)를 피합니다.
+
+`Finalizers` 는 얘측할 수 없고 종종 위험하고 일반적으로 불필요합니다.
+
+- 비정상적인 동작, 성능 저하, 이식성의 문제가 발생할 수 있습니다.
+
+Java 9부터는 Finalizers를 더이상 사용하지는 않지만, Cleaners를 사용합니다. 그러나, `Cleaner`는 `Finalizers` 보다 덜 위험하지만 그래도 예측할 수 없고, 느리고, 일반적으로 불필요합니다.
+
+### Finalizers와 Cleaner의 단점 1 - 즉시 실행될 것이라는 보장이 없음
+
+종료자나 클리너가 실행되는 시간 사이에 임의의 시간이 걸릴 수 있습니다. 즉, **종료자 또는 클리너에서 시간이 중요한 작업을 수행하면 안됩니다.**
+
+### Finalizers와 Cleaner의 단점 2 - 종료 중에 발생한 예외는 무시됩니다.
+
+이러한 예외가 손상된 상태로 종료된 경우, 다른 스레드가 이를 사용할려고 하면 비 결정적인 동작이 발생할 수 있습니다.
+
+### Finalizers와 Cleaner의 단점 3 - 심각한 성능 저하
+
+`Try-with-resource`와 가비지 컬렉터를 쓰는 경우 12ns가 걸리는데 종료자를 사용하면 시간이 550ns가 발생합니다. Cleaner는 조금 더 빠르지만 66ns가 걸립니다.
+
+### Finalizers와 Cleaner의 단점 4 - 심각한 보안 문제 존재
+
+`finalizer attacks(종료자 공격)`을 사용하는 경우, 문제가 발생합니다. 
+
+이를 막기 위해서는 생성자에서 예외를 던지는 경우, 객체가 존재하지 않도록 방지할 수 있으나 종료자가 이를 불가능하게 만듭니다. 이를 **해결하기 위해서는 `finalize` 와 같은 최종 메서드를 사용**해야합니다.
+
+
+
+### Finalizers나 Cleaner를 쓰지 않기 위해서.
+
+- `AutoCloseable` 을 통해서 클래스를 구현합니다.
+- `try-with-resource` 를 통해서 종료를 보장합니다.
+
+
+
+### Finalizers나 Cleaner의 합법적인 용도
+
+- 리소스 소유자가 close method 호출을 무시할 경우, 안전막 역할을 하는 것입니다.
+  - `FileInputStream`, `FileOutputStream`, `ThreadPoolExecutor` 등이 finalizers를 통해서 안전망 역할을 수행합니다.
+- `native peer`가 있는 객체와 관련된 경우에 사용합니다.
+  - 이러한 객체는 일반 객체가 아니므로 가비지 컬렉터가 이에 대해 모르기 때문에, 회수할 수 엇습니다.
+  - 다만, 이렇게 사용을 하더라도 `close method`를 사용해야합니다.
+
+```java
+// 클리너를 안전망을 사용하는 경우.
+public class Room implements AutoCloseable {
+  private static final Cleaner cleaner = Cleaner.create();
+  
+  // cleaning이 필요합니다. Room을 참조하면 안됩니다.
+  private static class State implements Runnable {
+    int numJunkPiles; // 이 방의 쓰레기 더미 수 
+    State(int numJunkPiles) {
+      this.numJunkPiles = numJunkPiles;
+    }
+    
+    // close 메소드 또는 클리너에 의해 호출 
+		@Override public void run() {
+      System.out.println("Cleaning room");
+      numJunkPiles = 0;
+    }
+  }
+
+	// room의 상태, cleanable과 공유됨
+	private final State state;
+
+	// cleanable, gc에 의해 가능할때 room이 청소됩니다.
+	private final Cleaner.Cleanable cleanable;
+
+	public Room(int numJunkPiles) {
+		state = new State(numJunkPiles);
+		cleanable = cleaner.register(this, state);
+	}
+
+	@Override public void close() {
+		cleanable.clean();
+	}
+}
+```
+
+다음과 같이 State 인스턴스가 Room을 참조하지 않도록 사용합니다.
+
+
+
+<br/>
+
+## TRY-WITH-RESOURCE 를 TRY-FINALLY 보다 선호합니다.
+
+Java 라이브러리에서는 close 메소드를 호출하는 경우, 많은 자원이 소모되기 때문에 다른 방법을 사용해야합니다.
+
+`Try-finally` 는 2개 이상의 경우에서는 사용하기 어렵기 때문에, `try-with-resource` 를 사용하는 것이 좋습니다.
+
+```java
+static String firstLineOfFile (String path) throws IOException {
+  try (BufferedReader br = new BufferedReader (new FileReader(path)) {
+    return br.readLine ();
+  }
+}
+```
+
+```java
+static String firstLineOfFile (String path, String defaultVal) { 
+  try (BufferedReader br = new BufferedReader (new FileReader (path))) { 
+		return br.readLine (); 
+  } catch (IOException e) { 
+		return defaultVal; 
+  } 
+}
+```
+
