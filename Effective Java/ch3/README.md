@@ -123,6 +123,22 @@ public class ColorPoint {
 
 ## 'Equals'를 오버라이딩 할때, `Hashcode`를 항상 오버라이딩합니다.
 
+- `equals`를 재정의하는 모든 클래스에서는 반드시 `hashCode`를 재정의해야합니다.
+- 동일한 개체에 동일한 해시 코드가 있어야합니다.
+
+```java
+// 전형적인 hashCode method
+@Override public int hashCode() {
+  int result = Short.hashCode(areaCode);
+  result = 31 * result + Short.hashCode(prefix);
+  result = 31 * result + Short.hashCode(lineNum);
+  return result;
+}
+```
+
+- 성능을 향상시키기 위해 hash code 계산에서 중요한 필드를 제외하면 안됩니다. (품질이 급격하게 떨어짐)
+- `hashCode`에서 반환한 값에 대해 자세한 스펙을 제공하면 안됩니다. 이러한 경우, 클라이언트 값에 합리적으로 의존할 수 없습니다. 따라서, 유연성을 제공해야합니다.
+
 <br/>
 
 ## 'ToString'을 항상 오버라이딩합니다.
@@ -134,7 +150,3 @@ public class ColorPoint {
 <br/>
 
 ## 'Comparable'을 개발할때 고려합니다.
-
-```
-
-```
