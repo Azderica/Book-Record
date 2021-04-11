@@ -143,10 +143,152 @@ public class ColorPoint {
 
 ## 'ToString'을 항상 오버라이딩합니다.
 
+- equals나 hashCode를 준수하는 것만큼의 비중은 아지만, 좋은 `toString`을 제공하면, 클래스를 더 좋게 사용할 수 있고 이후에 디버깅을 하기도 편해집니다.
+
+- 가능한 경우, `toString` 메소드는 객체에서 포함하고 있는 중요한 정보를 반환해야합니다.
+
+- 형식 지정 여부와 관계없이, 의도를 명확하게 문서화해야합니다.
+
+```java
+/* 휴대폰 번호를 세 부분으로 나누는 것은 너무 작기때문에,
+ * 이러한 필드값을 채우기 위해, 다음과 같이 진행했습니다.
+ * Ex. lineNum이 123인 경우, "0123"으로 나타냅니다.
+ */
+@Override public String toString() {
+  return String.format("%03d-%03d-%04d", areaCode, prefix, lineNum);
+}
+```
+
+- 형식을 지정했든 말든, `toString`로 반환되는 값에 포함된 정보에 대해 프로그램 액세스를 제공해야합니다.
+
 <br/>
 
 ## 신중하게 'Clone'을 오버라이딩합니다.
 
+실질적으로 스펙에서 명시되어 있지는 않지만, 실전에서는 `Cloneable`을 구현하는 클래스는 정상적으로 public clone method를 제공하는 것으로 예상됩니다.
+
+즉, 아래의 조건을 만족합니다.
+
+```java
+x.clone().getClass() == x.getClass(); // true
+```
+
+다만 몇가지 지켜야할 요소가 있습니다. `immutable class`의 경우에는 낭비적인 복사를 사용하기 때문에, `clone` 메소드를 제공하면 안됩니다.
+
+```java
+public class Stack {
+  private Object[] elements;
+  private int size = 0;
+  private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+  public Stack() {
+    this.elements = new Object[DEFAULT_INITIAL_CAPACITY];
+  }
+
+  public void push(Object e) {
+    ensureCapacity();
+    elements[size++] = e;
+  }
+
+  public Object pop() {
+    if(size == 0) throw new EmptyStackException();
+    Object result = elements[--size];
+    elements[size] = null;  // 사용하지 않는 참조
+    return result;
+  }
+
+  public void ensureCapacity() {
+    if(elements.length == size)
+      elements = Arrays.copyOf(elements, 2 * size + 1);
+  }
+}
+```
+
+해당 위의 스택 클래스를 clone을 하는 경우, 복제된 Stack 클래스의 경우 동일한 elements 주소를 참조하기 때문에, 복제본의 불변성이 파괴됩니다.
+
+즉, clone 메서드는 생성자 역할을 수행하기 때문에, 원본 객체에 해를 끼치지 않고 복제본에 불변을 수행하는 지 확인해야합니다.
+
+따라서 다음과 같이 clone()을 사용해야합니다.
+
+```java
+@Override public Stack clone() {
+  try {
+    Stack result = (Stack) super.clone();
+    result.elements = elements.clone();
+    return result;
+  } catch (CloneNotSupportedException e) {
+    throw new AssertionError();
+  }
+}
+```
+
+`Cloneable` 아키텍처는 변경가능한 객체을 참조하는 final 필드의 일반적인 사용과 호환되지 않습니다.
+
+따라서 아래와 같은 복사를 사용할 수 있습니다.
+
+```java
+// 반복적인 복사, 깨끗하지만 맹목적으로 복사본을 덮어씁니다.
+Entry deepCopy() {
+  Entry result = new Entry(key, value, next);
+  for(Entry p = result; p.next != null; p = p.next)
+    p.next = new Entry(p.next.key, p.next.value, p.next.next);
+  return result;
+}
+```
+
+그러나 이러한 방법보다, 가장 좋은 방법 중 하나는 **복사 생성자 또는 복사 팩토리를 제공하는 것**입니다.
+
+```java
+// Copy constructor
+public Yum(Yum yum) { ... }
+
+// Copy factory
+public static Yum newInstance(Yum yum) { ... };
+```
+
 <br/>
 
 ## 'Comparable'을 개발할때 고려합니다.
+
+`compareTo` 메서드는 `Comparable` 인터페이스의 유일한 방법입니다. 이는 Comparable 객체의 컬렉션 유지 관리에도 편하는 장점이 있습니다.
+
+sgn에 대한 여러가지 수학적 조건이 있으나 여기서는 너무 수학적으로 설명되기에 이를 생략합니다.
+
+```java
+// 개체 참조 필드와 비교 가능한 단일 필드
+public final class CaseInsensitiveString implements Comparable<CaseInsensitiveString> {
+  public int compareTo(CaseInsensitiveString cis) {
+    return String.CASE_INSENSITIVE_ORDER.compare(s, cis.s);
+  }
+}
+```
+
+`compareTo` 메소드에서 관계 연산자인 `<and>`를 사용하는 것은 오류가 발생하기 때문에 더이상 권장되지 않습니다.
+
+```java
+// Comparable with comparator construction methods
+private static final Comparator<PhoneNumber> COMPARATOR =
+  comparingInt((PhoneNumber pn) -> pn.areaCode)
+  .thenComparingInt(pn -> pn.prefix)
+  .thenComparingInt(pn -> pn.lineNum);
+
+public int compareTo(PhoneNumber pn) {
+  return COMPARATOR.compare(this, pn);
+}
+
+```
+
+```java
+// static compare 메소드에 기반을 둔 Comparator
+static Comparator <Object> hashCodeOrder = new Comparator <> () {
+  public int compare(Object o1, Object o2) {
+    return Integer.compare (o1.hashCode (), o2.hashCode())
+  }
+}
+
+// Comparator construction 메소드에 기반을 둔 Comparator
+static Comparator <Object> hashCodeOrder =
+  Comparator.comparingInt (o-> o.hashCode ());
+```
+
+다음과 같이 비교를 하는 것이 권장됩니다.
