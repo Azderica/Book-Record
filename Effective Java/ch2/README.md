@@ -12,20 +12,20 @@ BigInteger prime = BigInteger.valueOf(Integer.MAX_VALUE);
 StackWalker luke = StackWalker.getInstance(options);
 ```
 
-#### 1. 정적 팩토리 메서드의 한 가지 장점은 생성자와 달리 이름이 존재한다.
+#### 1. 정적 팩토리 메서드의 한 가지 장점은 생성자와 달리 이름이 존재합니다.
 
 - 정적 팩토리가 사용하기 쉽고, 읽기 쉬운 클라이언트 코드를 제공합니다.
 - 여러 생성자가 필요하다고 판단되면, 정적 팩토리 메서드를 사용하는 것이 좋습니다.
 
-#### 2. 생성자와 달리 호출될 때마다 새 개체를 만들 필요가 없음
+#### 2. 생성자와 달리 호출될 때마다 새 개체를 만들 필요가 없습니다.
 
 - 생성된 인스턴스를 캐시하고 불필요한 중복 객체 생성을 방지하고 반복적으로 분배 가능합니다.
 - 반복 된 호출에서 동일한 객체를 반환하는 정적 팩토리 메서드의 기능을 통해 클래스는 언제든지 존재하는 인스턴스를 엄격하게 제어 할 수 있습니다.
 
-#### 3. 생성자와 달리 반환 유형의 모든 하위 유형의 객체를 반환할 수 있다.
+#### 3. 생성자와 달리 반환 유형의 모든 하위 유형의 객체를 반환할 수 있습니다.
 
-- 유연성의 한 가지 응용 프로그램은 API가 클래스를 공개하지 않고도 객체를 반환 할 수 있다는 것입니다.
-- Java 8에서는 인터페이스에 정적 메서드를 포함 할 수 없다는 제한이 제거되었으므로 편하게 사용할 수 있음
+- 이러한 유연함을 이용해 특정 응용 프로그램은 API가 클래스를 공개하지 않고도 객체를 반환 할 수 있습니다.
+- Java 8에서는 인터페이스에 정적 메서드를 포함 할 수 없다는 제한이 제거되었으므로 편하게 사용할 수 있습니다.
 
 #### 4. 반환 된 개체의 클래스가 입력 매개 변수의 함수로 호출마다 다를 수 있다.
 
@@ -44,21 +44,17 @@ StackWalker luke = StackWalker.getInstance(options);
 
 - 서비스 액세스 API는 공급자가 제공하는 것보다 더 풍부한 서비스 인터페이스를 클라이언트에 반환 가능 (`Bridge 패턴`)
 
-
-
 ### 정적 팩토리 메서드의 단점
 
-#### 1. public 또는 protected 생성자가 없는 클래스는 하위 클래스화 할 수 없다.
+#### 1. public 또는 protected 생성자가 없는 클래스는 하위 클래스화 할 수 없습니다.
 
 - Collections Framework에서 편의 구현 클래스를 하위 클래스로 만드는 것은 불가능합니다.
-- 프로그래머가 상속(inheritance)보다 합성(composition) 를 사용하는 것을 장려하고, immutable types에 필요합니다.
+- 프로그래머가 상속(inheritance)보다 합성(composition) 를 사용하는 것을 장려하며, immutable types에 필요합니다.
 
-#### 2. 프로그래머가 찾기 어렵다
+#### 2. 프로그래머가 찾기 어렵습니다.
 
 - API 문서에서 눈에 띄지 않습니다.
 - 생성자가 수행하므로 생상자 대신 정적 팩토리 메서드를 제공하는 클래스를 인스턴스화 하는 방법을 파악하기 어렵습니다.
-
-
 
 ### 대표적 팩토리 메서드
 
@@ -93,7 +89,7 @@ StackWalker luke = StackWalker.getInstance(options);
 
 ## 생성자 매개 변수가 많은 경우, 빌더를 고려
 
-Static factories 와 생성자는 제한을 고유하므로, 잘 확장되지 않는다.
+Static factories 와 생성자는 제한을 고유하므로, 잘 확장되지 않습니다.
 
 ### telescoping constructor 패턴
 
@@ -106,15 +102,11 @@ public NutritionFacts (int servingSize, int servings, int calories, int fat) { .
 public NutritionFacts (int servingSize, int servings, int calories, int fat, int sodium) { ... }
 ```
 
-- 텔레 스코핑 생성자 패턴은 작동하지만 매개 변수가 많으면 클라이언트 코드를 작성하기 어렵고 여전히 읽기가 더 어렵습니다.
-
-
+- 텔레 스코핑 생성자 패턴은 작동하지만 매개 변수가 많으면 클라이언트 코드를 작성하기 어렵고 여전히 읽기가 어렵습니다.
 
 ### JavaBeans 패턴
 
-이를 해결하는 방법은 setter 메소드 호출(`JavaBeans 패턴`)입니다. (이 경우는 텔레 스코핑 생성자 패턴을 해결하기에는 유리하나 단점입니다.)
-
-- 불일치를 허용하고 가변성을 요구
+이를 해결하는 방법은 setter 메소드 호출(`JavaBeans 패턴`)입니다. (이 경우는 텔레 스코핑 생성자 패턴을 해결하기에는 유리하나 **불일치를 허용하고 가변성을 요구**한다는 단점이 존재합니다.)
 
 ```java
 @Setter
@@ -132,15 +124,13 @@ public class NutritionFacts {
   - 유효성을 확인하는 것으로 일관성을 유지할 수 있는 옵션이 따로 없습니다.
   - 클래스를 불변으로 만들 가능성을 배제하고 스레드 안전성을 보장하기 위해 노력이 필요합니다.
 
-
-
 ### Builder 패턴
 
 텔레 스코핑 생성자 패턴의 안전성 + JavaBeans 패턴의 가독성을 결합
 
-- 클라이언트는 필요한 모든 매개 변수를 사용하여 생성자 (또는 정적 팩토리)를 호출하고 빌더 객체를 가져옴
-- 그런 다음 클라이언트는 빌더 개체에서 setter와 유사한 메서드를 호출하여 관심있는 각 선택적 매개 변수를 설정함
-- 클라이언트는 매개 변수가없는 build메서드를 호출하여 일반적으로 변경할 수없는 개체를 생성함
+- 클라이언트는 필요한 모든 매개 변수를 사용하여 생성자 (또는 정적 팩토리)를 호출하고 빌더 객체를 가져옵니다.
+- 그런 다음 클라이언트는 빌더 개체에서 setter와 유사한 메서드를 호출하여 관심있는 각 선택적 매개 변수를 설정합니다.
+- 클라이언트는 매개 변수가없는 build메서드를 호출하여 일반적으로 변경할 수없는 개체를 생성합니다.
 
 ```java
 public class NutritionFacts {
@@ -213,7 +203,7 @@ public abstract class Pizza {
 
 ## private 생성자 또는 열거형을 통해 싱글 톤 속성을 적용
 
-singleton은  정확하게 한번만 인스턴스화 되고, stateless 또는 unique한 시스템 컴포넌트입니다.  **클래스를 싱글톤으로 만들면, 클라이언트 테스트가 어려울 수 있습니다.** 왜냐하면 해당 유형으로 사용되는 인터페이스를 구현하지 않는 이상에 싱글톤을 mock으로 구현할 수 없기 때문입니다.
+singleton은 정확하게 한번만 인스턴스화 되고, stateless 또는 unique한 시스템 컴포넌트입니다. **클래스를 싱글톤으로 만들면, 클라이언트 테스트가 어려울 수 있습니다.** 왜냐하면 해당 유형으로 사용되는 인터페이스를 구현하지 않는 이상에 싱글톤을 mock으로 구현할 수 없기 때문입니다.
 
 일반적으로 싱글톤을 구현하는 방법에 따라 구분할 수 있습니다.
 
@@ -224,7 +214,7 @@ singleton은  정확하게 한번만 인스턴스화 되고, stateless 또는 un
 public class Elvis {
   public static final Elvis INSTANCE = new Elvis();
   private Elvis() {...}
-  
+
   public void leaveTheBuilding() { ... }
 }
 ```
@@ -243,7 +233,7 @@ public class Elvis {
   private static final Elvis INSTANCE = new Elvis();
   private Elvis() { ... }
 	public static Elvis getInstance() { return INSTANCE; }
-  
+
   public void leaveTheBuilding() { ... }
 }
 ```
@@ -252,9 +242,9 @@ public class Elvis {
 - 정잭 팩토리의 장점은 아래와 같습니다.
   - API를 변경하지 않고도 클래스가 싱글톤인지 여부에 대해 바꿀 수 있는 유연성을 제공합니다.
   - 애플리케이션에서 필요한 경우, `genericwe singleton factory` 를 작성할 수 있습니다.
-  - `method reference(메소드 참조)` 를  supllier(공급자)로 사용할 수 있습니다.
+  - `method reference(메소드 참조)` 를 supllier(공급자)로 사용할 수 있습니다.
 
-그러나 1번이나 2번의 접근 방식은 싱글톤은 `serializabe(직렬화)`  하는 경우에는 `implements Serializable` 만으로는 충분하지 않기 때문에 모든 인스턴스 필드(`transient`)를 선언하고 `readResolve` 메소드를 제공해야합니다.
+그러나 1번이나 2번의 접근 방식은 싱글톤은 `serializabe(직렬화)` 하는 경우에는 `implements Serializable` 만으로는 충분하지 않기 때문에 모든 인스턴스 필드(`transient`)를 선언하고 `readResolve` 메소드를 제공해야합니다.
 
 ```java
 // 싱글톤 속성을 보존하는 readResolve 메서드
@@ -270,7 +260,7 @@ private Object readResolve () {
 // Enum sigleton - the preferred approach
 public enum Elvis {
   INSTANCE;
-  
+
   public void leaveTheBuilding() { ... }
 }
 ```
@@ -284,7 +274,7 @@ public enum Elvis {
 
 - `java.lang.Math` 나 `java.util.Arrays`, `java.util.Colletions` 와 같은 유틸리티 클래스는 인스턴스화되도록 설계되어 있지 않습니다.
 
-- 추상 클래스를 만들어서 noninstantiability를 적용하려는 것은 동작하지 않습니다. 
+- 추상 클래스를 만들어서 noninstantiability를 적용하려는 것은 동작하지 않습니다.
 - 다만 기본 생성자는 클래스에 명시적 생성자가 없는 경우에 생성되므로, private constructor을 포함함으로서 class를 noninstantiable 상태로 만들 수 있습니다.
 
 ```java
@@ -299,8 +289,6 @@ public class UtilityClass {
 - explict constructor(명시적 생성자)는 private 이므로, 외부에서 접근할 수 없습니다.
 - `AssertionError()` 는 생성자가 실수로 클래스 내에서 호출되는 경우에 보험을 제공합니다. 즉, 어떤 상황에서도 클래스가 인스턴스화 되지않음을 보장합니다.
 - 다만, 이러한 방법은 클래스가 하위 클래스로 분류되는 것을 방지합니다. 즉, 서브 클래스에는 호출할 액세스 가능한 super class 생성자가 없습니다.
-
-
 
 <br/>
 
@@ -338,7 +326,7 @@ public class SpellCheker {
 Dependency Injection Pattern(의존성 주입 패턴)은 다음의 장점을 가집니다.
 
 - immutabiliy(불변성)을 보존합니다.
-- resource factory를 전달함으로서 패턴을 변경할 수 있습니다. (**Fractory Method Pattern**)
+- resource factory를 전달함으로서 패턴을 변경할 수 있습니다. (**Factory Method Pattern**)
   - 자바8에 도입된 `Supplier<T>` 인터페이스는 Factories를 표현하는데 효과적입니다.
   - `Supplier<T>` 메소드는 `bounded wildcard type(제한된 와일드카드 유형)` 을 사용해서 팩토리의 매개변수를 제한하여, 클라이언트가 지정된 유형의 하위 유형의 생성하는 팩토리를 전달해야합니다.
 
@@ -369,24 +357,24 @@ static boolean isRomanNumeral (String s) {
 }
 ```
 
-- 다만 문자열이 정규식과 일치하는지 확인하는 가장 쉬운 방법이지만  String.matches` 성능이 중요한 상황에서 반복적으로 사용하기에는 적합하지 않습니다. 이를 개선하면 아래처럼 바뀝니다.
+- 다만 문자열이 정규식과 일치하는지 확인하는 가장 쉬운 방법이지만 String.matches` 성능이 중요한 상황에서 반복적으로 사용하기에는 적합하지 않습니다. 이를 개선하면 아래처럼 바뀝니다.
 
 ```java
 // 성능 향상을 위해 값 비싼 객체 재사용합니다.
-public class RomanNumerals { 
+public class RomanNumerals {
   private static final Pattern ROMAN = Pattern.compile (
     "^ (? =.) M * (C [MD] | D? C {0,3})" + "( X [CL] | L? X {0,3}) (I [XV] | V? I {0,3}) $ "
-  ); 
+  );
 
-  static boolean isRomanNumeral (String s) { 
-    return ROMAN.matcher (s) .matches (); 
+  static boolean isRomanNumeral (String s) {
+    return ROMAN.matcher (s) .matches ();
 	}
 }
 ```
 
 - 이러한 버전은 isRomanNumeral을 자주 호출할 경우 높은 성능을 얻으며, 명확성도 향상되었고 사용자가 보기 쉽습니다.
 
-Autoboxin는 애매하지만, primitive 와 boxed primitive types간의 구분을 없애버리지는 않습니다. 이러한 잘못된 사용은 속도를 느리게 만듭니다. 따라서, boxed primitives 보다, primitive를 선호하고 의도하지 않은 오토 박싱을 조심해야합니다.
+Autoboxing는 애매하지만, primitive 와 boxed primitive types간의 구분을 없애버리지는 않습니다. 이러한 잘못된 사용은 속도를 느리게 만듭니다. 따라서, boxed primitives 보다, primitive를 선호하고 의도하지 않은 오토 박싱을 조심해야합니다.
 
 ```java
 private static long sum() {
@@ -412,21 +400,21 @@ public class Stack {
   private Object[] elements;
   private int size = 0;
   private static final int DEFAULT_INITIAL_CAPACITY = 16;
-  
+
   public Stack() {
     elements = new Object[DEFAULT_INITIAL_CAPACITY];
   }
-  
+
   public void push(Object e) {
     ensureCapacity();
     elements[size++] = e;
   }
-  
+
   public Object pop() {
     if(size == 0) throw new EmptyStackException();
     return elements[--size];
   }
-  
+
   private void ensureCapacity() {
     if(elements.length == size)
       elements = Arrays.copyOf(elements, 2 * size + 1);
@@ -454,13 +442,11 @@ public Object pop () {
 
 캐시에 넣어놓으면 참조가 있다는 사실을 이후에 잊고, 관련성이 없어진 이후에도 남아있을 확률이 높습니다. 대부분의 캐시에서 사용하는 데이터의 가치는 시간과 반비례하기 때문에 항목을 정리할 필요가 있습니다. `LinkedHashMap` 는 `removeEldestEntry` 방법을 통해서 이러한 낭비를 피하기 위해 노력합니다.
 
-### 메모리 낭비의 원인 3.  리스너 및 기타 콜백
+### 메모리 낭비의 원인 3. 리스너 및 기타 콜백
 
 클라이언트가 콜백을 등록하지만, 명시적으로 취소하지 않으면 누적됩니다.
 
 이러한 부분을 삭제하는 방법은 `.NET Framework` 의 `WeakHashMap` 과 같습니다.
-
-
 
 **이렇듯이 메모리 낭비는 명백한 오류로 나타나지 않기 때문에, 미리 예상하고 예방하는 방법을 배우는 것이 매우 바람직합니다.**
 
@@ -488,18 +474,14 @@ Java 9부터는 Finalizers를 더이상 사용하지는 않지만, Cleaners를 �
 
 ### Finalizers와 Cleaner의 단점 4 - 심각한 보안 문제 존재
 
-`finalizer attacks(종료자 공격)`을 사용하는 경우, 문제가 발생합니다. 
+`finalizer attacks(종료자 공격)`을 사용하는 경우, 문제가 발생합니다.
 
 이를 막기 위해서는 생성자에서 예외를 던지는 경우, 객체가 존재하지 않도록 방지할 수 있으나 종료자가 이를 불가능하게 만듭니다. 이를 **해결하기 위해서는 `finalize` 와 같은 최종 메서드를 사용**해야합니다.
-
-
 
 ### Finalizers나 Cleaner를 쓰지 않기 위해서.
 
 - `AutoCloseable` 을 통해서 클래스를 구현합니다.
 - `try-with-resource` 를 통해서 종료를 보장합니다.
-
-
 
 ### Finalizers나 Cleaner의 합법적인 용도
 
@@ -513,15 +495,15 @@ Java 9부터는 Finalizers를 더이상 사용하지는 않지만, Cleaners를 �
 // 클리너를 안전망을 사용하는 경우.
 public class Room implements AutoCloseable {
   private static final Cleaner cleaner = Cleaner.create();
-  
+
   // cleaning이 필요합니다. Room을 참조하면 안됩니다.
   private static class State implements Runnable {
-    int numJunkPiles; // 이 방의 쓰레기 더미 수 
+    int numJunkPiles; // 이 방의 쓰레기 더미 수
     State(int numJunkPiles) {
       this.numJunkPiles = numJunkPiles;
     }
-    
-    // close 메소드 또는 클리너에 의해 호출 
+
+    // close 메소드 또는 클리너에 의해 호출
 		@Override public void run() {
       System.out.println("Cleaning room");
       numJunkPiles = 0;
@@ -547,8 +529,6 @@ public class Room implements AutoCloseable {
 
 다음과 같이 State 인스턴스가 Room을 참조하지 않도록 사용합니다.
 
-
-
 <br/>
 
 ## TRY-WITH-RESOURCE 를 TRY-FINALLY 보다 선호합니다.
@@ -566,12 +546,11 @@ static String firstLineOfFile (String path) throws IOException {
 ```
 
 ```java
-static String firstLineOfFile (String path, String defaultVal) { 
-  try (BufferedReader br = new BufferedReader (new FileReader (path))) { 
-		return br.readLine (); 
-  } catch (IOException e) { 
-		return defaultVal; 
-  } 
+static String firstLineOfFile (String path, String defaultVal) {
+  try (BufferedReader br = new BufferedReader (new FileReader (path))) {
+		return br.readLine ();
+  } catch (IOException e) {
+		return defaultVal;
+  }
 }
 ```
-
