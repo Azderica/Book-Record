@@ -2,9 +2,9 @@
 
 객체는 콘크리트 클래스이지만, 주로 확장을 위해 설계됩니다. (대표적인 예시로, equals, hashCode, toString, clone, finalize 등이 override되도록 설계되어있습니다.)
 
-nonfinal Object 메소드를 재정의하는 시기와 방법에 대허 설명합니다.
+nonfinal Object 메소드를 재정의하는 시기와 방법에 대해 설명합니다.
 
-## 'Equals'를 오버라이딩 할 때, 일반적인 룰을 준수합니다.
+## `Equals`를 오버라이딩 할 때, 일반적인 룰을 준수합니다.
 
 equals 메서드를 재정의하는 방법은 여러가지가 있지만, 잘못된 사용은 끔찍한 결과를 만듭니다. 따라서 다음의 룰을 준수해야합니다.
 
@@ -121,7 +121,7 @@ public class ColorPoint {
 
 <br/>
 
-## 'Equals'를 오버라이딩 할때, `Hashcode`를 항상 오버라이딩합니다.
+## `Equals`를 오버라이딩 할때, `Hashcode`를 항상 오버라이딩합니다.
 
 - `equals`를 재정의하는 모든 클래스에서는 반드시 `hashCode`를 재정의해야합니다.
 - 동일한 개체에 동일한 해시 코드가 있어야합니다.
@@ -137,11 +137,11 @@ public class ColorPoint {
 ```
 
 - 성능을 향상시키기 위해 hash code 계산에서 중요한 필드를 제외하면 안됩니다. (품질이 급격하게 떨어짐)
-- `hashCode`에서 반환한 값에 대해 자세한 스펙을 제공하면 안됩니다. 이러한 경우, 클라이언트 값에 합리적으로 의존할 수 없습니다. 따라서, 유연성을 제공해야합니다.
+- `hashCode`에서 반환한 값에 대해 자세한 스펙을 제공하면 안됩니다. 이 경우, 클라이언트 값에 합리적으로 의존할 수 없습니다. 따라서, 유연성을 제공해야합니다.
 
 <br/>
 
-## 'ToString'을 항상 오버라이딩합니다.
+## `ToString`을 항상 오버라이딩합니다.
 
 - equals나 hashCode를 준수하는 것만큼의 비중은 아지만, 좋은 `toString`을 제공하면, 클래스를 더 좋게 사용할 수 있고 이후에 디버깅을 하기도 편해집니다.
 
@@ -163,7 +163,7 @@ public class ColorPoint {
 
 <br/>
 
-## 신중하게 'Clone'을 오버라이딩합니다.
+## 신중하게 `Clone`을 오버라이딩합니다.
 
 실질적으로 스펙에서 명시되어 있지는 않지만, 실전에서는 `Cloneable`을 구현하는 클래스는 정상적으로 public clone method를 제공하는 것으로 예상됩니다.
 
@@ -248,7 +248,7 @@ public static Yum newInstance(Yum yum) { ... };
 
 <br/>
 
-## 'Comparable'을 개발할때 고려합니다.
+## `Comparable`을 개발할때 고려합니다.
 
 `compareTo` 메서드는 `Comparable` 인터페이스의 유일한 방법입니다. 이는 Comparable 객체의 컬렉션 유지 관리에도 편하는 장점이 있습니다.
 
