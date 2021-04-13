@@ -4,6 +4,32 @@ Class와 Interface는 추상화의 기본 단위이며, 이를 위해 여러 요
 
 ## 클래스 및 멤버의 접근성을 최소화합니다.
 
+- 정보 은닉은 개발, 테스트, 최적화, 사용, 이해 및 수정에서 큰 용이성을 가집니다.
+- **각 클래스 또는 멤버를 가능한 한 액세스 할 수 없게 처리합니다.**
+
+액세스 수준은 다음과 같이 4가지로 구성됩니다.
+
+- private : 선언된 최상위 클래스에서만 액세스 가능
+- package-private(default) : 선언된 패키지의 모든 클래스에서 액세스 가능
+- protected : 선언된 클래스의 하위 클래스 및 선언된 패키지의 모든 클래스에서 액세스 가능
+- public : 어디서나 액세스 가능
+
+추가적으로 지켜야하는 룰은 다음과 같습니다.
+
+- public 클래스의 인스턴스 필드는 public이면 안됩니다.
+- **변경가능한 public 필드가 있는 class는 일반적으로 스레드로부터 안전하지 않습니다.**
+- 클래스에 public static final array field 또는 이러한 필드를 반환하는 접근자가 있으면 안됩니다.
+  - 해결책은 2개가 있습니다.
+  - public array를 비공개로 바꾸고, public static 목록에 추가합니다.
+  - array를 private로 만들고, public method를 추가합니다.
+
+```java
+// 잠재적인 보안 구멍
+public static final Thing[] VALUES = {...};
+```
+
+**결론적으로, 프로그램 요소의 접근성을 최대한 줄여야합니다.**
+
 <br/>
 
 ## public class에서는 public field가 아닌, 접근자 메소드를 사용합니다.
