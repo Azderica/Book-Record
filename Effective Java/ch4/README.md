@@ -137,9 +137,83 @@ public class ForwardingSet<E> implements Set<E> {
 
 ## 상속을 위한 설계 및 문서 또는 금지
 
+상속을 위해 클래스를 설계하고 문서화하는 것은 아래를 의미합니다.
+
+- 클래스는 메서드 재정의의 효과를 정확하게 문서화해야합니다. 즉, **클래스는 재정의 가능한 메서드의 자체 사용을 문서화해야합니다.**
+- 상속을 위한 디자인은 단순히 자체 사용 패턴을 문서화하는 것 이상을 의미합니다.
+- 상속을 위해 설계된 클래스를 테스트하는 유일한 방법은 하위 클래스를 사용하는 방법입니다.
+- release 하기 전에 하위 클래스를 작성하여 클래스를 테스트해야합니다.
+- 생성자는 재정의 가능한 메서드를 직접 혹은 간접으로 호출하면 안됩니다.
+- clone이나 readObject는 직접 또는 간접적으로 재정의 가능한 메서드를 호출할 수 없습니다.
+- 안전하게 sub classing 되도록 설계 및 문서화되지 않은 클래스에서 sub classing을 금지하는 것입니다.
+
 <br/>
 
 ## 추상 클래스보다는 인터페이스를 선호합니다.
+
+자바에서는 type을 구현하는 두가지 방법은 인터페이스와 추상클래스가 있습니다.
+
+- 기존클래스를 쉽게 개조하여 새 인터페이스를 구현할 수 있습니다.
+- 인터페이스는 mixins를 정의하는 것에 이상적입니다.
+  - mixin : 클래스가 기본유형에 추가하여 구현할 수 있는 유형이며 선택적 동작을 제공함
+- 인터페이스는 nonhierarchical type 프레임워크의 구성을 허용합니다.
+
+```java
+public interface Singer {
+  AudioClip sing(Song s);
+}
+
+public interface Songwriter {
+  Song compose (int chartPosition);
+}
+
+public interface SingerSongwriter extends Singer, Songwriter {
+  AudioClip strum();
+  void actSensitive();
+}
+```
+
+- 인터페이스는 wrapper 클래스를 통해 안전하고 강력한 기능 향상을 가능하게합니다.
+
+### Template Method Pattern
+
+인터페이스와 함께, abstract skeletal 구현 클래스를 제공해서 장점을 결합한 패턴입니다. 인터페이스는 유형을 정의하고, 기본 메소드를 제공하며 skeletal 구현 클래스는 나머지 non-primitive 인터페이스를 구현합니다.
+
+인터페이스 자체에 있는 기본 메소드의 이점을 사용할 수 있고 skeletal 구현 클래스는 구현의 작업을 지원할 수 있습니다,.
+
+```java
+// Skeletal implementation class
+public abstract class AbstractMapEntry<K,V> implements Map.Entry<K,V> {
+  // Entries in a modifiable map must override this method
+  @Override public V setValue(V value) {
+    throw new UnsupportedOperationException();
+  }
+
+  // Implements the general contract of Map.Entry.equals
+  @Override public boolean equals(Object o) {
+    if (o == this)
+      return true;
+    if (!(o instanceof Map.Entry))
+      return false;
+    Map.Entry<?,?> e = (Map.Entry) o;
+
+    return Objects.equals(e.getKey(), getKey())
+      && Objects.equals(e.getValue(), getValue());
+  }
+
+  // Implements the general contract of Map.Entry.hashCode
+  @Override public int hashCode() {
+    return Objects.hashCode(getKey())
+      ^ Objects.hashCode(getValue());
+  }
+
+  @Override public String toString() {
+    return getKey() + "=" + getValue();
+  }
+}
+```
+
+- skeletal 구현에서는 좋은 문서가 절대적으로 필요합니다.
 
 <br/>
 
