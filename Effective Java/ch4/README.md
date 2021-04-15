@@ -271,6 +271,82 @@ public class PhysicalConstants {
 
 ## 태그가 있는 클래스보다 클래스 계층을 선호합니다.
 
+경우에 따라 인스턴스가 둘 이상의 특징으로 제공되는 인스턴스의 특징을 나타내는 tag field를 포함하는 클래스를 실행할 수 있습니다.
+
+```java
+// Tagged class - 클래스 계층보다 안좋습니다.
+class Figure {
+  enum Shape {RECTANGLE, CIRCLE};
+
+  // Tag field : the shape of this figure
+  final Shape shape;
+
+  // These fields are used only if shape is RECTANGLE
+  double length;
+  double width;
+
+  // This field is used only if shape is CIRCLE
+  double radius;
+
+  // Constructor for circle
+  Figure(double radius) {
+    shape = Shape.CIRCLE;
+    this.radius = radius;
+  }
+
+  // Constructor for rectangle
+  Figure(double length, double width) {
+    shape = Shape.RECTANGLE;
+    this.length = length;
+    this.width = width;
+  }
+
+  double area() {
+    switch(shape) {
+      case RECTANGLE:
+        return length * width;
+      case CIRCLE:
+        return Math.PI * (radius * radius);
+      default:
+        throw new AssertionError(shape);
+    }
+  }
+}
+```
+
+이러한 코드는 매우 지저분합니다. 즉, **태그가 지정된 클래스는 장황하고 오류가 발생하기 쉬우며 비효율적입니다.** 이러한 클래스는 클래스 계층 구조를 모방한 것입니다.
+
+이를 클래스 계층으로 나타내면 다음과 같습니다.
+
+```java
+// Class hierarchy replacement for a tagged class
+abstract class Figure {
+  abstract double area();
+}
+
+class Circle extends Figure {
+  final double radius;
+
+  Circle(double radius) { this.radius = radius; }
+
+  @Override double area() { return Math.PI * (radius * radius); }
+}
+
+class Rectangle extends Figure {
+  final double length;
+  final double width;
+
+  Rectangle(double length, double width) {
+    this.length = length;
+    this.width  = width;
+  }
+
+  @Override double area() { return length * width; }
+}
+```
+
+이와 같은 클래스 계층은 태그 지정된 클래스의 모든 단점을 해결하고, 자연스러운 계층 관계를 반영하여 유연성을 높이고 컴파일시 유형 검사를 향상 시킬수 있습니다.
+
 <br/>
 
 ## 비정적보다 정적 멤버 클래스를 선호합니다.
