@@ -250,6 +250,23 @@ default boolean removeIf (Predicate <? super E> filter) {
 
 ## 인터페이스를 사용해 Types를 정의합니다.
 
+클래스가 인터페이스를 구현할 때, 인터페이스는 클래스의 인스턴스를 참조하는데 사용할 수 있는 type으로 사용됩니다.
+
+상수 인터페이스 패턴은 인터페이스를 제대로 사용하지 못하는 것입니다. 상수 유틸리티 클래스로 다음과 같이 선언할 수 있습니다.
+
+```java
+// 상수 유틸리티 클래스
+public class PhysicalConstants {
+  private PhysicalConstants() {}  // 인스턴스화 방지
+
+  public static final double AVOGADROS_NUMBER = 6.022_140_857e23;
+  public static final double BOLTZMANN_CONST = 1.380_648_52e-23;
+  public static final double ELECTRON_MASS = 9.109_383_56e-31;
+}
+```
+
+즉, 인터페이스는 type을 정의하는데만 사용해야합니다. 상수를 내보낼 때는 사용해서는 안됩니다.
+
 <br/>
 
 ## 태그가 있는 클래스보다 클래스 계층을 선호합니다.
