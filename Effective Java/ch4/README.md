@@ -213,11 +213,38 @@ public abstract class AbstractMapEntry<K,V> implements Map.Entry<K,V> {
 }
 ```
 
-- skeletal 구현에서는 좋은 문서가 절대적으로 필요합니다.
+- skeletal 구현은 상속을 위해 설계되었으므로 skeletal 구현에서는 좋은 문서가 절대적으로 필요합니다.
 
 <br/>
 
 ## posterity(후세)를 위한 디자인 인터페이스
+
+Java 8 이후로, default method 구성이 추가되었습니다. 또한 주로 람다 사용을 용이하기 위해서 Java 8의 핵심 Collection Interface에 많은 기본 메서드가 추가됩니다. Java의 라이브러리의 기본 메소드는 잘 구현되어 있으며, 대부분 제대로 작동합니다.
+
+그러나 **모든 가능한 구현의 모든 불변을 유지하는 기본 메서드를 작성하는 것이 항상 가능한 것은 아닙니다.**
+
+```java
+// Java 8의 Collection 인터페이스에 추가 된 기본 메소드
+default boolean removeIf (Predicate <? super E> filter) {
+  Objects.requireNonNull(filter);
+  boolean result = false;
+  for (Iterator<E> it = iterator(); it.hasNext(); ) {
+    if (filter.test(it.next())) {
+      it.remove();
+      result = true;
+    }
+  }
+  return result;
+}
+```
+
+해당 코드가 removeIf 메소드에 대해 작성할 수 있는 코드이지만, 실제 Collection 구현에서는 실패합니다.
+
+기본 메서드가 있는 경우, 인터페이스의 기존 구현이 오류나 경고없이 컴파일 될 수 있지만 런타임에는 실패합니다.
+
+기본 메소드가 Java 플랫폼의 일부이지만, **인터페이스를 신중하게 디자인하는 것이 여전히 가장 중요합니다.**.
+
+인터페이스 출시 이후에, 몇 가지 인터페이스 결함을 수정하는 것이 가능하지만 이를 믿을 수 없습니다. 따라서 release 하기 전에는 새 인터페이스를 테스트하는 것이 중요합니다.
 
 <br/>
 
