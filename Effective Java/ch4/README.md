@@ -349,8 +349,86 @@ class Rectangle extends Figure {
 
 <br/>
 
-## 비정적보다 정적 멤버 클래스를 선호합니다.
+## nonstatic 보다 static member class를 선호합니다.
+
+nested(중첩된) class는 다른 클래스내에 정의된 클래스입니다. nested class가 다른 컨텍스트에서 유용하다면 최상위 클래스여야지 의미가 있습니다.
+
+중첩 클래스는 다음으로 나눠집니다.
+
+- static member class
+- non-static member class
+- anonymous class
+- local class
+
+### static member class
+
+static member class (정적 멤버 클래스)은 public helper class로, 외부 클래스와 함께 사용하는 경우 유용합니다.
+
+### non-static member class
+
+정적 멤버 클래스와 비정적 멤버 클래스의 유일한 차이점은 static 선언에 수정자가 있다는 점입니다.
+
+일반적으로 nonstatic member class의 일반적인 용도 중 하나 는 외부 클래스의 인스턴스를 관련없는 일부 클래스의 인스턴스로 볼 수 있도록 허용하는 Adapter이며, 다음과 같이 구현됩니다.
+
+```java
+// nonstatic member class의 일반적인 사용
+public class MySet<E> extends AbstractSet<E> {
+  ... // Bulk of the class omitted
+
+  @Override public Iterator<E> iterator() {
+    return new MyIterator();
+  }
+
+  private class MyIterator implements Iterator<E> { ... }
+}
+```
+
+둘러싸는 인스턴스에 액세스할 필요가 없는 멤버 클래스를 선언하는 경우, 항상 해당 선언에 static modifier을 넣습니다.
+
+### anonymous class
+
+익명 클래스는 이름이 없고, 적용 가능성에는 많은 제한이 있습니다. 선언된 시점을 제외하고는 인스턴스화할 수 없습니다. 또한 길어지면 가독성이 떨어지기 때문에 짧게 유지해야합니다.
+
+### local class
+
+가장 자주 사용되지 않으며, 지역 변수가 선언될 수 있고 동일한 scope 내에 지정 규칙을 지킵니다.
 
 <br/>
 
 ## 소스 파일을 단일 최상위 클래스로 제한합니다.
+
+Java 컴파일러를 사용하면 단일 소스 파일에 여러 최상위 클래스를 정의할 수 있지만, 이에 대한 이점이 없으며 위험이 있습니다.
+
+즉, 아래의 코드는 매우 위험합니다.
+
+```java
+// 하나의 파일에 정의 된 두 개의 클래스
+class Utensil {
+  static final String NAME = "pan";
+}
+
+class Dessert {
+  static final String NAME = "cake";
+}
+```
+
+위의 코드보다 나은 케이스입니다.
+
+```java
+// 여러 최상위 클래스 대신 정적 멤버 클래스
+public class Test {
+  public static void main (String [] args) {
+    System.out.println (Utensil.NAME + Dessert.NAME);
+  }
+
+  private static class Utensil {
+    static final String NAME = "pan";
+  }
+
+  private static class Dessert {
+    static final String NAME = "cake";
+  }
+}
+```
+
+다음과 같이, **단일 소스에는 여러 최상이 클래스또는 인터페이스를 넣으면 안됩니다.**
