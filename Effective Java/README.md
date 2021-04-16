@@ -3,7 +3,7 @@
 - [객체 생성과 삭제](./ch2/README.md)
 - [모든 객체에 공통적인 메소드](./ch3/README.md)
 - [클래스와 인터페이스](./ch4/README.md)
-- Generics
+- [제네릭](./ch5/README.md)
 - enums and Annotations
 - Lambdas and Streams
 - Methods
