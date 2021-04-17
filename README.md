@@ -18,5 +18,5 @@
 
 ## Dev
 
-- [Clean Architecture](./Clean%20Architecture/README.md)
 - [Clean Code](./Clean%20Code/README.md)
+- [Clean Architecture](./Clean%20Architecture/README.md)
