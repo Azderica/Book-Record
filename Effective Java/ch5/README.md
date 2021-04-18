@@ -146,6 +146,67 @@ public class Stack {
 
 <br/>
 
+## Generic methods를 선호합니다.
+
+클래스가 제네릭일 수 있는 것처럼 메소드도 가능합니다.
+
+```java
+// Uses raw types - 허용되지 않습니다.
+public static Set union(Set s1, Set s2) {
+  Set result = new HashSet(s1);
+  result.addAll(s2);
+  return result;
+}
+
+// Generic method
+public static <E> Set<E> union(Set<E> s1, Set<E> s2) {
+  Set<E> result = new HashSet<>(s1);
+  result.addAll(s2);
+  return result;
+}
+```
+
+이러한 generic method를 사용하는 간단한 코드는 다음과 같습니다.
+
+```java
+public static void main(String[] args) {
+  Set<String> guys = Set.of("Tom", "Dick", "Harry");
+  Set<String> stooges = Set.of("Larry", "Moe", "Curly");
+  Set<String> aflCio = union(guys, stooges);
+  System.out.println(aflCio);
+}
+```
+
+식별함 후 디스펜서를 작성하면 다음과 같습니다.
+
+```java
+// 일반 싱글 톤 팩토리 패턴
+private static UnaryOperator <Object> IDENTITY_FN = (t)-> t;
+
+@SuppressWarnings ( "unchecked")
+public static <T> UnaryOperator <T> identityFunction () {
+  return (UnaryOperator <T>) IDENTITY_FN;
+}
+```
+
+컬렉션의 최대 값을 계산하는 코드입니다.
+
+```java
+// 컬렉션에서 최대 값을 반환합니다. 재귀 유형 바인딩을 사용합니다.
+public static <E extends Comparable<E>> E max(Collection<E> c) {
+  if (c.isEmpty())
+    throw new IllegalArgumentException("Empty collection");
+
+  E result = null;
+  for (E e : c)
+    if (result == null || e.compareTo(result) > 0)
+      result = Objects.requireNonNull(e);
+  return result;
+}
+```
+
+위의 내용을 요약하면 다음과 같습니다. generic type과 같은 generic methods는 클라이언트가 입력 매개 변수에 명시적 캐스트를 입력하고 값을 반환해야하는 메서드보다 안전하고 사용하기 쉽습니다. 이를 위해 메소드를 캐스트 없이 사용할 수 있는지 확인해야하며, 이는 generic을 의미합니다.
+
 <br/>
 
 ## API 유연성을 향상시키기 위해서, 제한된 Wildcards를 사용합니다.
