@@ -69,9 +69,82 @@ public <T> T[] toArray(T[] a) {
 
 ## Arrays 보다는 List를 선호합니다.
 
+Array는 제네릭 유형과 두가지 중요한 측면에서 다릅니다.
+
+- 1. 배열은 covariant(함께 변할 수 있고), 제네릭은 erasure(불변)입니다.
+
+```java
+// Runtime에 실패함.
+Object[] objectArray = new Long[1];
+objectArray[0] = "I don't fit in";  // ArrayStoreException 에러가 발생합니다.
+
+// Compile되지 않습니다.
+List<Object> ol = new ArrayList<Long> (); // 호환되지 않음
+ol.add("I don't fit in");
+```
+
+- 2. 배열은 reified
+
+```java
+// 배열 생성이 불법이며, 컴파일되지 않습니다.
+List<String>[] stringLists = new List<String>[1];
+List<Integer> intList = List.of(42);
+Object[] objects = stringLists;
+objects[0] = intList;
+String s = stringLists[0].get(0);
+```
+
 <br/>
 
-## Generic 타입을 선호합니다.
+## Generic type을 선호합니다.
+
+일반적으로 선언을 매개 변수화하고 JDK에서 제공하는 제네릭 유형 및 메소드를 사용하는 것은 어렵지 않으며, 그만한 가치가 있습니다.
+
+```java
+// 객체 기반 컬렉션-제네릭의 주요 후보
+public class Stack {
+  private E[] elements;
+  private int size = 0;
+  private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+  // 요소 배열에는 push (E)의 E 인스턴스 만 포함됩니다.
+  // 이것은 타입 안전성을 보장하기에 충분하지만
+  // 배열 의 런타임 타입은 E []가 아닙니다; 항상 Object []입니다!
+  @SuppressWarnings ( "unchecked")
+  public Stack() {
+    elements = (E[]) new Object[DEFAULT_INITIAL_CAPACITY];
+  }
+
+  public void push(E e) {
+    ensureCapacity();
+    elements[size++] = e;
+  }
+
+  public E pop() {
+    if (size == 0)
+      throw new EmptyStackException();
+
+    // 일반 스택을 실행하는 작은 프로그램
+    @SuppressWarnings("unchecked")
+    E result = elements[--size];
+    elements[size] = null; // Eliminate obsolete reference
+    return result;
+  }
+
+  public boolean isEmpty() {
+    return size == 0;
+  }
+
+  private void ensureCapacity() {
+    if (elements.length == size)
+      elements = Arrays.copyOf(elements, 2 * size + 1);
+  }
+}
+```
+
+다음과 같이 경고 창을 제거할 수 있습니다.
+
+<br/>
 
 <br/>
 
