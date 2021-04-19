@@ -211,6 +211,71 @@ public static <E extends Comparable<E>> E max(Collection<E> c) {
 
 ## API 유연성을 향상시키기 위해서, 제한된 Wildcards를 사용합니다.
 
+고정 타이핑 보다는 더 많은 유연성을 제공하는 것이 필요합니다. 아래의 코드는 이러한 유연성을 표현한 public API입니다.
+
+```java
+public class Stack<E> {
+  public Stack();
+  public void push(E e);
+  public E pop();
+  public boolean isEmpty();
+}
+```
+
+이를 사용하는 와일드 카드 유형은 다음과 같습니다.
+
+```java
+// E producer 역할을 수행하는 매개 변수의 와일드 카드 유형
+public void pushAll(Iterable<? extends E> src) {
+  for (E e : src)
+    push(e);
+}
+
+// E consumer 역할을하는 매개 변수의 와일드 카드 유형
+public void popAll(Collection<? super E> dst) {
+  while (!isEmpty())
+    dst.add(pop());
+}
+```
+
+이러한 코드처럼, 유연성을 최대화려면 Producer와 Consumer를 나타내는 입력 매개 변수에 와일드 카드 유형을 사용하면 됩니다.
+
+PECS(Producer extends and Consumer super)
+
+- Get 과 Put 원칙이며, structure에서 값을 얻을 때 `extends` 와일드 카드를 사용하고, structure에서 값을 넣을때 `super` 와일드 카드를 사용합니다.
+
+그러나, 클래스 사용자가 와일드 카드 유형에 대해 생각하고 개발해야한다면, API에 문제가 발생할 수 있습니다. 즉, 아래의 코드는 문제가 발생하는 코드입니다.
+
+```java
+public static <E> Set<E> union(Set<? extends E> s1, Set<? extends E> s2)
+```
+
+```java
+Set <Integer> 정수 = Set.of (1, 3, 5);
+Set <Double> doubles = Set.of (2.0, 4.0, 6.0);
+
+// 에러 발생, #1과 #2가 교차 유형이므로
+Set <Number> numbers = union (integers, doubles);
+
+// 이를 해결하는 코드는 아래와 같습니다.
+Set <Number> numbers = Union.<Number>union(integers, doubles);
+```
+
+아래의 swap 메서드는 컴파일 구현에 깔끔하며, 와일드 카드 기반 선언을 잘 표현한 코드입니다.
+
+```java
+public static void swap(List<?> list, int i, int j) {
+  swapHelper(list, i, j);
+}
+
+// 와일드 카드 캡처를위한 private 도우미 메서드
+private static <E> void swapHelper(List<E> list, int i, int j) {
+  list.set(i, list.set(j, list.get(i)));
+}
+```
+
+이와 같이, API에서 와일드카드 유형을 사용하는 것은 일부 까다롭지만 API를 훨씬 더 유연하게 만듭니다. 특히, **자주 사용되는 라이브러리를 작성하는 경우에는 와일드 카드 유형의 사용은 필수적**이며 기본 규칙인 **PECS**를 기억하는 것이 중요합니다. 추가적으로 모든 비교 대상들은 consumer입니다.
+
 <br/>
 
 ## Generics와 Varargs를 신중하게 결합합니다.
