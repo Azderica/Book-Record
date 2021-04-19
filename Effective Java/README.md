@@ -11,3 +11,7 @@
 - Exceptions
 - Concurrency
 - Serialization
+
+향후 참고 git repository
+
+- [effective java 3rd source code](https://github.com/WegraLee/effective-java-3e-source-code)
