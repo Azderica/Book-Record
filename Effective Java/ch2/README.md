@@ -527,6 +527,8 @@ public class Room implements AutoCloseable {
 }
 ```
 
+[추가적인 참고자료](https://m.blog.naver.com/PostView.nhn?blogId=kbh3983&logNo=220908731253&proxyReferer=https:%2F%2Fwww.google.com%2F)
+
 다음과 같이 State 인스턴스가 Room을 참조하지 않도록 사용합니다.
 
 <br/>
