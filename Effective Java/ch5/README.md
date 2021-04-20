@@ -280,6 +280,87 @@ private static <E> void swapHelper(List<E> list, int i, int j) {
 
 ## Generics와 Varargs를 신중하게 결합합니다.
 
+Varargs 메소드와 제네릭은 Java 5에서 생겼으며, varargs의 목적은 클라이언트가 파라미터 인수를 메서드에 전달할 수 있도록 하는 것입니다.
+
+아래의 코드는 varargs 배열의 매개 변수에 값을 저장하는 것이 안전하지 않음을 보여줍니다.
+
+```java
+// 제네릭과 varargs를 혼합하면 유형 안전성을 위반할 수 있습니다!
+static void dangerous(List<String>... stringLists) {
+  List<Integer> intList = List.of(42);
+  Object[] objects = stringLists;
+  objects[0] = intList;             // Heap pollution
+  String s = stringLists[0].get(0); // ClassCastException
+}
+```
+
+`SafteVarargs` annotation은 typesafe 된것의 method를 보장합니다. 다만, 컴파일러가 하는 호출 경고가 사용자에게 가지 않기 때문에 이를 사용할 때는 주석이 필요합니다.
+
+아래는 일반적인 varargs 메서드를 사용할 때 중요한 부분입니다.
+
+- varargs 매개 변수 배열에 아무것도 저장하지 않습니다.
+- 신뢰할 수 없는 코드를 보이도록 배열을 만들면 안됩니다. 이를 위반하면 수정해야합니다.
+
+아래는 좋은 코드입니다.
+
+```java
+// List as a typesafe alternative to a generic varargs parameter
+static <T> List<T> flatten(List<List<? extends T>> lists) {
+  List<T> result = new ArrayList<>();
+  for (List<? extends T> list : lists)
+    result.addAll(list);
+  return result;
+}
+```
+
+이를 사용한 코드는 아래와 같습니다.
+
+```java
+audience = flatten(List.of(friends, romans, countrymen));
+```
+
+이를 정리하면, varargs 기능은 배열 위의 생성된 leaky abstraction이므로, varargs와 generics는 제대로 상호작용하지 않으며, 배열에는 generics와 다른 유형의 규칙이 있습니다. 일반 varargs 매개변수는 형식이 안전하지 않지만, 사용할 수 있습니다.
+
+제네릭 varargs 매개 변수를 사용해서 메서드를 작성하는 경우에는 먼저 메서드의 형식이 안전한지 확인하고, `@SaftVarargs`을 사용하는 것이 불편하지 않도록 주석을 추가해야합니다.
+
 <br/>
 
 ## Typesafe한 Heterogeneous 컨테이너를 고려합니다.
+
+```java
+// Typesafe heterogeneous container pattern - API
+public class Favorites {
+  public <T> void putFavorite(Class<T> type, T instance);
+  public <T> T getFavorite(Class<T> type);
+}
+```
+
+```java
+// Typesafe heterogeneous container pattern - client
+public static void main(String[] args) {
+  Favorites f = new Favorites();
+  f.putFavorite(String.class, "Java");
+  f.putFavorite(Integer.class, 0xcafebabe);
+  f.putFavorite(Class.class, Favorites.class);
+
+  String favoriteString = f.getFavorite(String.class);
+  int favoriteInteger = f.getFavorite(Integer.class);
+  Class<?> favoriteClass = f.getFavorite(Class.class);
+
+  System.out.printf("%s %x %s%n", favoriteString, favoriteInteger, favoriteClass.getName());
+}
+```
+
+```java
+// Typesafe heterogeneous container pattern - implementation
+public class Favorites {
+  private Map<Class<?>, Object> favorites = new HashMap<>();
+  public <T> void putFavorite(Class<T> type, T instance) {
+    favorites.put(Objects.requireNonNull(type), instance);
+  }
+
+  public <T> T getFavorite(Class<T> type) {
+    return type.cast(favorites.get(type));
+  }
+}
+```
