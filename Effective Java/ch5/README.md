@@ -325,15 +325,25 @@ audience = flatten(List.of(friends, romans, countrymen));
 
 <br/>
 
-## Typesafe한 Heterogeneous 컨테이너를 고려합니다.
+## Typesafe한 혼성 컨테이너를 고려합니다.
+
+아래 코드는, 혼성 컨테이너를 보여주는 대표적인 코드 예시입니다.
 
 ```java
-// Typesafe heterogeneous container pattern - API
+// Typesafe heterogeneous container pattern - implementation
 public class Favorites {
-  public <T> void putFavorite(Class<T> type, T instance);
-  public <T> T getFavorite(Class<T> type);
+  private Map<Class<?>, Object> favorites = new HashMap<>();
+  public <T> void putFavorite(Class<T> type, T instance) {
+    favorites.put(Objects.requireNonNull(type), instance);
+  }
+
+  public <T> T getFavorite(Class<T> type) {
+    return type.cast(favorites.get(type));
+  }
 }
 ```
+
+위의 Favorities 객체를 읽거나, 추가 하는 경우에는 Key에 해당하는 Class 객체를 전달해야합니다.
 
 ```java
 // Typesafe heterogeneous container pattern - client
@@ -351,16 +361,32 @@ public static void main(String[] args) {
 }
 ```
 
+위의 코드 대신에 Map을 통해서 구현할 수는 있지만, 이 경우에는 데이터를 가져오는 과정에 `ClassCastException` 런타임 에러가 발생할 수 있기 때문에 타입 안전이 보장되는 혼성 컨테이너에 비해 위험합니다.
+
+앞서 나온 Favorites의 클래스에는 2가지 문제가 존재합니다.
+
+- 악의적인 client가 Favorites의 원시 형식 Class 객체를 사용해서 인스턴스의 안전성을 손상시킬 수 있습니다.
+- 수정 불가능한 유형에서 사용할 수 없습니다.
+
+이러한 문제를 해결하기 위해, asSubClass를 사용할 수 있으며 컴파일 타임에 type을 알 수 없는 annotation을 읽을 수 있습니다.
+
 ```java
-// Typesafe heterogeneous container pattern - implementation
-public class Favorites {
-  private Map<Class<?>, Object> favorites = new HashMap<>();
-  public <T> void putFavorite(Class<T> type, T instance) {
-    favorites.put(Objects.requireNonNull(type), instance);
+// asSubclass를 사용하여 제한된 유형 토큰으로 안전하게 캐스트
+static Annotation getAnnotation(AnnotatedElement element, String annotationTypeName) {
+  Class<?> annotationType = null; // Unbounded type token
+
+  try {
+    annotationType = Class.forName(annotationTypeName)s;
+  } catch (Exception ex) {
+    throw new IllegalArgumentException(ex);
   }
 
-  public <T> T getFavorite(Class<T> type) {
-    return type.cast(favorites.get(type));
-  }
+  return element.getAnnotation(annotationType.asSubclass(Annotation.class));
 }
 ```
+
+요약하면, 컬렉션 API의 예시가 된 제네릭 사용은 컨테이너당 고정된 수의 유형 매개 변수로 제한입니다. **컨테이너가 아닌 키에 type매개 변수를 배치하여 이 제한을 피할 수 있습니다.** 이러한 방법로 혼성 컨테이너의 키로 안전한 Class 객체를 사용할 수 있습니다.
+
+> Heterogeneous Container (혼성 컨테이너)
+
+만약 컨테이너 자체가 아닌, 요소의 키에 타입 매개변수를 두면 서로 다른 타입의 요소가 저장될 수 있는 컨테이너이며, 이를 혼성 컨테이너라고 합니다.
