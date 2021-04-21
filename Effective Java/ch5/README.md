@@ -86,7 +86,7 @@ ol.add("I don't fit in");
 - 2. 배열은 reified
 
 ```java
-// 배열 생성이 불법이며, 컴파일되지 않습니다.
+// 배열 생성이 불가능하며 컴파일되지 않습니다.
 List<String>[] stringLists = new List<String>[1];
 List<Integer> intList = List.of(42);
 Object[] objects = stringLists;
@@ -205,13 +205,15 @@ public static <E extends Comparable<E>> E max(Collection<E> c) {
 }
 ```
 
-위의 내용을 요약하면 다음과 같습니다. generic type과 같은 generic methods는 클라이언트가 입력 매개 변수에 명시적 캐스트를 입력하고 값을 반환해야하는 메서드보다 안전하고 사용하기 쉽습니다. 이를 위해 메소드를 캐스트 없이 사용할 수 있는지 확인해야하며, 이는 generic을 의미합니다.
+위의 내용을 요약하면 다음과 같습니다.
+
+generic type과 같은 generic methods는 클라이언트가 입력 매개 변수에 명시적 캐스트를 입력하고 값을 반환해야하는 메서드보다 안전하고 사용하기 쉽습니다. 이를 위해 캐스트 없이 메소드를 사용할 수 있게 해야합니다. (generic)
 
 <br/>
 
 ## API 유연성을 향상시키기 위해서, 제한된 Wildcards를 사용합니다.
 
-고정 타이핑 보다는 더 많은 유연성을 제공하는 것이 필요합니다. 아래의 코드는 이러한 유연성을 표현한 public API입니다.
+고정된 유형보다는 더 많은 유연성을 제공하는 것이 필요합니다. 아래의 코드는 이러한 유연성을 표현한 public API입니다.
 
 ```java
 public class Stack<E> {
@@ -278,14 +280,16 @@ private static <E> void swapHelper(List<E> list, int i, int j) {
 
 <br/>
 
-## Generics와 Varargs를 신중하게 결합합니다.
+## 제네릭과 가변인수를 신중하게 합칩니다.
 
-Varargs 메소드와 제네릭은 Java 5에서 생겼으며, varargs의 목적은 클라이언트가 파라미터 인수를 메서드에 전달할 수 있도록 하는 것입니다.
+가변인수 메소드와 제네릭은 Java 5에서 생겼기 때문에 같이 사용할 수 있다고 생각되지만 이는 그렇지 않습니다.
 
-아래의 코드는 varargs 배열의 매개 변수에 값을 저장하는 것이 안전하지 않음을 보여줍니다.
+**가변 인수의 목적**은 클라이언트가 파라미터 인수를 메서드에 전달할 수 있도록 하는 것입니다.
+
+아래의 코드는 가변인수 배열의 매개 변수에 값을 저장하는 것이 안전하지 않음을 보여줍니다.
 
 ```java
-// 제네릭과 varargs를 혼합하면 유형 안전성을 위반할 수 있습니다!
+// 제네릭과 가변 인수를 혼합하면 유형 안전성을 위반할 수 있습니다!
 static void dangerous(List<String>... stringLists) {
   List<Integer> intList = List.of(42);
   Object[] objects = stringLists;
@@ -294,17 +298,17 @@ static void dangerous(List<String>... stringLists) {
 }
 ```
 
-`SafteVarargs` annotation은 typesafe 된것의 method를 보장합니다. 다만, 컴파일러가 하는 호출 경고가 사용자에게 가지 않기 때문에 이를 사용할 때는 주석이 필요합니다.
+`SafeVarargs` annotation은 typesafe 된것의 method를 보장합니다. 다만, 컴파일러가 하는 호출 경고가 사용자에게 가지 않기 때문에 이를 사용할 때는 annotation이 필요합니다.
 
-아래는 일반적인 varargs 메서드를 사용할 때 중요한 부분입니다.
+아래는 일반적인 가변인수 메서드를 사용할 때 중요한 부분입니다.
 
-- varargs 매개 변수 배열에 아무것도 저장하지 않습니다.
-- 신뢰할 수 없는 코드를 보이도록 배열을 만들면 안됩니다. 이를 위반하면 수정해야합니다.
+- 가변인수 매개 변수 배열에 아무것도 저장하지 않습니다.
+- 신뢰할 수 없는 배열을 만들면 안됩니다. 이를 위반하면 수정해야합니다.
 
 아래는 좋은 코드입니다.
 
 ```java
-// List as a typesafe alternative to a generic varargs parameter
+// 제네릭 가변 인수 매개 변수가 있는 안전한 메서드
 static <T> List<T> flatten(List<List<? extends T>> lists) {
   List<T> result = new ArrayList<>();
   for (List<? extends T> list : lists)
@@ -319,9 +323,9 @@ static <T> List<T> flatten(List<List<? extends T>> lists) {
 audience = flatten(List.of(friends, romans, countrymen));
 ```
 
-이를 정리하면, varargs 기능은 배열 위의 생성된 leaky abstraction이므로, varargs와 generics는 제대로 상호작용하지 않으며, 배열에는 generics와 다른 유형의 규칙이 있습니다. 일반 varargs 매개변수는 형식이 안전하지 않지만, 사용할 수 있습니다.
+이를 정리하면, 가변 인수 기능은 배열 위의 생성된 leaky abstraction이므로, 가변 인수와 제네릭은 제대로 상호작용하지 않으며, 배열에는 generics와 다른 유형의 규칙이 있습니다. 일반 가변 인수의 매개변수는 형식이 안전하지 않습니다.
 
-제네릭 varargs 매개 변수를 사용해서 메서드를 작성하는 경우에는 먼저 메서드의 형식이 안전한지 확인하고, `@SaftVarargs`을 사용하는 것이 불편하지 않도록 주석을 추가해야합니다.
+즉, 정적 팩토리 메서드를 통해서 개발하는 방법이 `@SafeVarargs` annotation을 신경쓸 필요가 없습니다.
 
 <br/>
 
@@ -330,7 +334,7 @@ audience = flatten(List.of(friends, romans, countrymen));
 아래 코드는, 혼성 컨테이너를 보여주는 대표적인 코드 예시입니다.
 
 ```java
-// Typesafe heterogeneous container pattern - implementation
+// Typesafe 혼성 컨테이너 패턴 - implementation
 public class Favorites {
   private Map<Class<?>, Object> favorites = new HashMap<>();
   public <T> void putFavorite(Class<T> type, T instance) {
@@ -346,7 +350,7 @@ public class Favorites {
 위의 Favorities 객체를 읽거나, 추가 하는 경우에는 Key에 해당하는 Class 객체를 전달해야합니다.
 
 ```java
-// Typesafe heterogeneous container pattern - client
+// Typesafe 혼성 컨테이너 패턴 - client
 public static void main(String[] args) {
   Favorites f = new Favorites();
   f.putFavorite(String.class, "Java");
