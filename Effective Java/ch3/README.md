@@ -4,7 +4,7 @@
 
 nonfinal Object 메소드를 재정의하는 시기와 방법에 대해 설명합니다.
 
-## `Equals`를 오버라이딩 할 때, 일반적인 룰을 준수합니다.
+## Item 10. `Equals`를 오버라이딩 할 때, 일반적인 룰을 준수합니다.
 
 equals 메서드를 재정의하는 방법은 여러가지가 있지만, 잘못된 사용은 끔찍한 결과를 만듭니다. 따라서 다음의 룰을 준수해야합니다.
 
@@ -121,7 +121,7 @@ public class ColorPoint {
 
 <br/>
 
-## `Equals`를 오버라이딩 할때, `Hashcode`를 항상 오버라이딩합니다.
+## Item 11. `Equals`를 오버라이딩 할때, `Hashcode`를 항상 오버라이딩합니다.
 
 - `equals`를 재정의하는 모든 클래스에서는 반드시 `hashCode`를 재정의해야합니다.
 - 동일한 개체에 동일한 해시 코드가 있어야합니다.
@@ -141,7 +141,7 @@ public class ColorPoint {
 
 <br/>
 
-## `ToString`을 항상 오버라이딩합니다.
+## Item 12. `ToString`을 항상 오버라이딩합니다.
 
 - equals나 hashCode를 준수하는 것만큼의 비중은 아지만, 좋은 `toString`을 제공하면, 클래스를 더 좋게 사용할 수 있고 이후에 디버깅을 하기도 편해집니다.
 
@@ -163,7 +163,7 @@ public class ColorPoint {
 
 <br/>
 
-## 신중하게 `Clone`을 오버라이딩합니다.
+## Item 13. 신중하게 `Clone`을 오버라이딩합니다.
 
 실질적으로 스펙에서 명시되어 있지는 않지만, 실전에서는 `Cloneable`을 구현하는 클래스는 정상적으로 public clone method를 제공하는 것으로 예상됩니다.
 
@@ -248,7 +248,7 @@ public static Yum newInstance(Yum yum) { ... };
 
 <br/>
 
-## `Comparable`을 개발할때 고려합니다.
+## Item 14. `Comparable`을 개발할때 고려합니다.
 
 `compareTo` 메서드는 `Comparable` 인터페이스의 유일한 방법입니다. 이는 Comparable 객체의 컬렉션 유지 관리에도 편하는 장점이 있습니다.
 

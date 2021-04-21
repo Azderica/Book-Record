@@ -2,7 +2,7 @@
 
 Class와 Interface는 추상화의 기본 단위이며, 이를 위해 여러 요소 등을 사용할 수 있습니다.
 
-## 클래스 및 멤버의 접근성을 최소화합니다.
+## Item 15. 클래스 및 멤버의 접근성을 최소화합니다.
 
 - 정보 은닉은 개발, 테스트, 최적화, 사용, 이해 및 수정에서 큰 용이성을 가집니다.
 - **각 클래스 또는 멤버를 가능한 한 액세스 할 수 없게 처리합니다.**
@@ -32,7 +32,7 @@ public static final Thing[] VALUES = {...};
 
 <br/>
 
-## public class에서는 public field가 아닌, 접근자 메소드를 사용합니다.
+## Item 16. public class에서는 public field가 아닌, 접근자 메소드를 사용합니다.
 
 ```java
 class Point {
@@ -47,7 +47,7 @@ class Point {
 
 <br/>
 
-## 변경 가능성을 최소화합니다.
+## Item 17. 변경 가능성을 최소화합니다.
 
 분변 클래스는 단순히 인스턴스를 수정할 수 없는 클래스이며 이는 설계, 구현 및 사용하기에 더 쉬우며 오류 가능성이 적고 더 안전합니다.
 
@@ -75,7 +75,7 @@ class Point {
 
 <br/>
 
-## Inheritance(상속)보다 Composition(구성)을 선호합니다.
+## Item 18. Inheritance(상속)보다 Composition(구성)을 선호합니다.
 
 상속은 코드 재사용을 달성하는 좋은 방법이지만, 항상 좋은 방법은 아닙니다.
 
@@ -135,7 +135,7 @@ public class ForwardingSet<E> implements Set<E> {
 
 <br/>
 
-## 상속을 위한 설계 및 문서 또는 금지
+## Item 19. 상속을 위한 설계 및 문서 또는 금지
 
 상속을 위해 클래스를 설계하고 문서화하는 것은 아래를 의미합니다.
 
@@ -149,7 +149,7 @@ public class ForwardingSet<E> implements Set<E> {
 
 <br/>
 
-## 추상 클래스보다는 인터페이스를 선호합니다.
+## Item 20. 추상 클래스보다는 인터페이스를 선호합니다.
 
 자바에서는 type을 구현하는 두가지 방법은 인터페이스와 추상클래스가 있습니다.
 
@@ -217,7 +217,7 @@ public abstract class AbstractMapEntry<K,V> implements Map.Entry<K,V> {
 
 <br/>
 
-## posterity(후세)를 위한 디자인 인터페이스
+## Item 21. posterity(후세)를 위한 디자인 인터페이스
 
 Java 8 이후로, default method 구성이 추가되었습니다. 또한 주로 람다 사용을 용이하기 위해서 Java 8의 핵심 Collection Interface에 많은 기본 메서드가 추가됩니다. Java의 라이브러리의 기본 메소드는 잘 구현되어 있으며, 대부분 제대로 작동합니다.
 
@@ -248,7 +248,7 @@ default boolean removeIf (Predicate <? super E> filter) {
 
 <br/>
 
-## 인터페이스를 사용해 Types를 정의합니다.
+## Item 22. 인터페이스를 사용해 Types를 정의합니다.
 
 클래스가 인터페이스를 구현할 때, 인터페이스는 클래스의 인스턴스를 참조하는데 사용할 수 있는 type으로 사용됩니다.
 
@@ -269,7 +269,7 @@ public class PhysicalConstants {
 
 <br/>
 
-## 태그가 있는 클래스보다 클래스 계층을 선호합니다.
+## Item 23. 태그가 있는 클래스보다 클래스 계층을 선호합니다.
 
 경우에 따라 인스턴스가 둘 이상의 특징으로 제공되는 인스턴스의 특징을 나타내는 tag field를 포함하는 클래스를 실행할 수 있습니다.
 
@@ -349,7 +349,7 @@ class Rectangle extends Figure {
 
 <br/>
 
-## nonstatic 보다 static member class를 선호합니다.
+## Item 24. nonstatic 보다 static member class를 선호합니다.
 
 nested(중첩된) class는 다른 클래스내에 정의된 클래스입니다. nested class가 다른 컨텍스트에서 유용하다면 최상위 클래스여야지 의미가 있습니다.
 
@@ -395,7 +395,7 @@ public class MySet<E> extends AbstractSet<E> {
 
 <br/>
 
-## 소스 파일을 단일 최상위 클래스로 제한합니다.
+## Item 25. 소스 파일을 단일 최상위 클래스로 제한합니다.
 
 Java 컴파일러를 사용하면 단일 소스 파일에 여러 최상위 클래스를 정의할 수 있지만, 이에 대한 이점이 없으며 위험이 있습니다.
 

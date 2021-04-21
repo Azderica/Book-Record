@@ -2,7 +2,7 @@
 
 Java 5이후로, 제네릭은 언어의 일부였습니다. 제네릭을 사용하면 각 컬렉션에서 허용되는 개체 유형을 컴파일러에 알리고, 자동으로 캐스트를 삽입합니다. 대부분 프로그램이 더 안전하고 명확하지만, collections에만 한정적이지 않기 때문에 신경을 써야하는 부분이 있습니다.
 
-## Raw 타입을 사용하면 안됩니다.
+## Item 26. Raw 타입을 사용하면 안됩니다.
 
 Raw 타입을 잘못 사용한 코드와 잘된 코드는 다음과 같습니다.
 
@@ -36,7 +36,7 @@ if (o instanceof Set) { // Raw type
 
 <br/>
 
-## 확인되지 않은 경고를 제거합니다.
+## Item 27. 확인되지 않은 경고를 제거합니다.
 
 제네릭으로 프로그래밍할 때 확인되지 않은 캐스트 경고, 확인되지 않은 메서드 호출 경고, 확인되지않은 매개 변수인 vararg 유형 경고 및 다양한 컴파일러 경고가 발생합니다.
 
@@ -67,7 +67,7 @@ public <T> T[] toArray(T[] a) {
 
 <br/>
 
-## Arrays 보다는 List를 선호합니다.
+## Item 28. Arrays 보다는 List를 선호합니다.
 
 Array는 제네릭 유형과 두가지 중요한 측면에서 다릅니다.
 
@@ -96,7 +96,7 @@ String s = stringLists[0].get(0);
 
 <br/>
 
-## Generic type을 선호합니다.
+## Item 29. Generic types을 선호합니다.
 
 일반적으로 선언을 매개 변수화하고 JDK에서 제공하는 제네릭 유형 및 메소드를 사용하는 것은 어렵지 않으며, 그만한 가치가 있습니다.
 
@@ -146,7 +146,7 @@ public class Stack {
 
 <br/>
 
-## Generic methods를 선호합니다.
+## Item 30. Generic methods를 선호합니다.
 
 클래스가 제네릭일 수 있는 것처럼 메소드도 가능합니다.
 
@@ -211,7 +211,7 @@ generic type과 같은 generic methods는 클라이언트가 입력 매개 변�
 
 <br/>
 
-## API 유연성을 향상시키기 위해서, 제한된 Wildcards를 사용합니다.
+## Item 31. API 유연성을 향상시키기 위해서, 제한된 Wildcards를 사용합니다.
 
 고정된 유형보다는 더 많은 유연성을 제공하는 것이 필요합니다. 아래의 코드는 이러한 유연성을 표현한 public API입니다.
 
@@ -280,7 +280,7 @@ private static <E> void swapHelper(List<E> list, int i, int j) {
 
 <br/>
 
-## 제네릭과 가변인수를 신중하게 합칩니다.
+## Item 32. 제네릭과 가변인수를 신중하게 합칩니다.
 
 가변인수 메소드와 제네릭은 Java 5에서 생겼기 때문에 같이 사용할 수 있다고 생각되지만 이는 그렇지 않습니다.
 
@@ -329,7 +329,7 @@ audience = flatten(List.of(friends, romans, countrymen));
 
 <br/>
 
-## Typesafe한 혼성 컨테이너를 고려합니다.
+## Item 33. Typesafe한 혼성 컨테이너를 고려합니다.
 
 아래 코드는, 혼성 컨테이너를 보여주는 대표적인 코드 예시입니다.
 
