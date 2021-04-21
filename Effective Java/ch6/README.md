@@ -162,3 +162,27 @@ enum PayrollDay {
 
 이를 정리하면 다음과 같습니다. int 상수에 비해 열거형 유형의 장점은 강력합니다.
 열거 형은 더 읽기 쉽고 안전하며, 강력합니다.
+
+<br/>
+
+## Item 35. Ordinals 대신에 인스턴스 필드를 사용합니다.
+
+<br/>
+
+## Item 36. 비트 필드 대신에 `EnumSet`을 사용합니다.
+
+<br/>
+
+## Item 37. Ordinals Indexing 대신 `EnumMap`을 사용합니다.
+
+<br/>
+
+## Item 38. 인터페이스로 확장 가능한 열거형을 모방합니다.
+
+<br/>
+
+## Item 39. Naming Patterns 보다 Annotation을 선호합니다.
+
+<br/>
+
+## Item 40. Override Annotation을 일관되게 사용해야합니다.
