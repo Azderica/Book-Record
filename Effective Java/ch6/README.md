@@ -167,9 +167,54 @@ enum PayrollDay {
 
 ## Item 35. Ordinals 대신에 인스턴스 필드를 사용합니다.
 
+많은 열거형은 Int와 관련되어 있으며, ordinal 등을 통해서 위치를 반환할 수 있습니다. 그러나 이를 남용하면 유지보수 및 관리에서 문제가 생길 수 있습니다.
+
+```java
+// 문제가 되는 코드, 순서를 바꾸면 망함.
+public enum Ensemble {
+  SOLO,   DUET,   TRIO, QUARTET, QUINTET,
+  SEXTET, SEPTET, OCTET, NONET,  DECTET;
+
+  public int numberOfMusicians() { return ordinal() + 1; }
+}
+```
+
+이러한 코드를 해결하는 방법은, 파생하지 않고 **인스턴스 필드에 저장**하는 것입니다.
+
+```java
+public enum Ensemble {
+  SOLO (1), DUET (2), TRIO (3), QUARTET (4), QUINTET (5),
+  SEXTET (6), SEPTET (7), OCTET (8), DOUBLE_QUARTET (8),
+  NONET (9), DECTET (10), TRIPLE_QUARTET (12);
+
+  private final int numberOfMusicians;
+  Ensemble (int size) {this.numberOfMusicians = size; }
+  public int numberOfMusicians () {return numberOfMusicians; }
+}
+```
+
 <br/>
 
 ## Item 36. 비트 필드 대신에 `EnumSet`을 사용합니다.
+
+비트 필드 표현을 통하면 비트 연산을 통해서 합집합이나 교차 집합 연산을 효율적으로 계산할 수 있습니다. 그러나 이러한 방법 들은 int 열거 형 상수 등의 단점이 있기때문에, `java.util` 패키지의 `EnumSet`을 사용하는 것이 중요합니다.
+
+이를 사용한 코드는 다음과 같습니다.
+
+```java
+public class Text {
+  public enum Style {BOLD, ITALIC, UNDERLINE, STRIKETHROUGH}
+
+  // 모든 세트를 전달할 수 있지만 EnumSet은 분명히 가장 좋습니다
+  public void applyStyles (Set <Style> styles) {...}
+}
+```
+
+```java
+text.applyStyles (EnumSet.of ( Style.BOLD, Style.ITALIC) );
+```
+
+즉, 이를 요약하면, 열거형이 집합에서 사용되기 때문에 비트 필드로 표현할 이유가 없습니다.
 
 <br/>
 
