@@ -220,6 +220,109 @@ text.applyStyles (EnumSet.of ( Style.BOLD, Style.ITALIC) );
 
 ## Item 37. Ordinals Indexing 대신 `EnumMap`을 사용합니다.
 
+때때로 ordinal 메서드를 사용해서 배열로 인덱싱 하는 코드를 볼 수 있습니다.
+
+이는 그러한 경우의 예시입니다.
+
+```java
+class Plant {
+  enum LifeCycle { ANNUAL, PERENNIAL, BIENNIAL }
+
+  final String name;
+  final LifeCycle lifeCycle;
+
+  Plant(String name, LifeCycle lifeCycle) {
+    this.name = name;
+    this.lifeCycle = lifeCycle;
+  }
+
+  @Override public String toString() {
+    return name;
+  }
+}
+```
+
+이러한 코드를 배열로 인덱싱한 코드입니다. (잘못된 코드)
+
+```java
+Set<Plant>[] plantsByLifeCycle =
+  (Set<Plant>[]) new Set[Plant.LifeCycle.values().length];
+
+for (int i = 0; i < plantsByLifeCycle.length; i++)
+  plantsByLifeCycle[i] = new HashSet<>();
+
+for (Plant p : garden)
+  plantsByLifeCycle[p.lifeCycle.ordinal()].add(p);
+
+for (int i = 0; i < plantsByLifeCycle.length; i++) {
+  System.out.printf("%s: %s%n",
+    Plant.LifeCycle.values()[i], plantsByLifeCycle[i]);
+}
+```
+
+이러한 코드는 문제가 있습니다. 배열은 제네릭과 호환되지 않기 때문에 깔끔하게 컴파일되지 않습니다.그리고, 사용자가 인덱싱 배열을 사용할 때 신경을 써야하는 부분이 많습니다.
+
+짧은 코드를 통해서 이보다 좀 더 좋은 코드를 구성하는 것은 `EnumMap`을 사용하는 것입니다.
+
+```java
+// EnumMap을 사용하여 데이터를 열거 형과 연결
+Map <Plant.LifeCycle, Set <Plant>> plantsByLifeCycle
+  = new EnumMap <> (Plant.LifeCycle.class);
+
+for (Plant.LifeCycle lc : Plant.LifeCycle.values ​​())
+  plantsByLifeCycle.put (lc, new HashSet <> ());
+
+for (Plant p : garden)
+  plantsByLifeCycle.get (p.lifeCycle) .add (p);
+
+System.out.println (plantsByLifeCycle);
+```
+
+```java
+// Stream과 EnumMap을 사용하여 데이터를 열거 형과 연결
+System.out.println (Arrays.stream (garden)
+  .collect (groupingBy (p-> p.lifeCycle,
+    ()-> new EnumMap <> (LifeCycle.class ) , toSet ())));
+```
+
+두 개의 열거형(Enum)형을 사용하는 경우에도 EnumMap을 사용하는 것이 좀 더 안전성이 높습니다.
+
+```java
+// 중첩 된 EnumMap을 사용하여 데이터를 열거 형 쌍과 연결
+public enum Phase {
+  SOLID, LIQUID, GAS;
+
+  public enum Transition {
+    MELT(SOLID, LIQUID), FREEZE(LIQUID, SOLID),
+    BOIL(LIQUID, GAS),   CONDENSE(GAS, LIQUID),
+    SUBLIME(SOLID, GAS), DEPOSIT(GAS, SOLID);
+
+    private final Phase from;
+    private final Phase to;
+
+    Transition(Phase from, Phase to) {
+      this.from = from;
+      this.to = to;
+    }
+
+    // the phase transition map 초기화
+    private static final Map<Phase, Map<Phase, Transition>>
+      m = Stream.of(values()).collect(groupingBy(t -> t.from,
+        () -> new EnumMap<>(Phase.class),
+        toMap(t -> t.to, t -> t,
+          (x, y) -> y, () -> new EnumMap<>(Phase.class))));
+
+    public static Transition from(Phase from, Phase to) {
+      return m.get(from).get(to);
+    }
+  }
+}
+```
+
+위으 코드의 경우에는 오류가 발생할 가능성이 거의 없으며, 명확성과 안전성 및 유지 관리성을 높이며 공간/시간 비용이 지불되지 않습니다.
+
+따라서, **ordinal을 사용해서 배열로 인덱싱하는 것은 적절하지 않으며 대신에 EnumMap을 사용하는 것이 중요합니다.**
+
 <br/>
 
 ## Item 38. 인터페이스로 확장 가능한 열거형을 모방합니다.
