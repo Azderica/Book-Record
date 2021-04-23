@@ -519,3 +519,92 @@ public class RunTests {
 <br/>
 
 ## Item 40. Override Annotation을 일관되게 사용해야합니다.
+
+Java 라이브러리에서는 여러 어노테이션이 포함되어 있는데, 그중에서 중요한 어노테이션으로 `@Override`를 고를 수 있습니다. `@Override`는 메서드 선언에서만 사용할 수 있으며, 어노테이션이 달린 메서드 선언이 상위 유형을 재정의 함을 나타냅니다. 이를 지속적으로 사용하면 많은 종류의 버그를 예방할 수 있습니다.
+
+이를 보여주는 코드는 다음과 같습니다.
+
+```java
+public class Bigram {
+  private final char first;
+  private final char second;
+
+  public Bigram(char first, char second) {
+    this.first  = first;
+    this.second = second;
+  }
+
+  public boolean equals(Bigram b) {
+    return b.first == first && b.second == second;
+  }
+
+  public int hashCode() {
+    return 31 * first + second;
+  }
+
+  public static void main(String[] args) {
+    Set<Bigram> s = new HashSet<>();
+    for (int i = 0; i < 10; i++)
+      for (char ch = 'a'; ch <= 'z'; ch++)
+        s.add(new Bigram(ch, ch));
+    System.out.println(s.size());
+  }
+}
+```
+
+위 코드는 그냥 보면, 문제를 인지할 수 없습니다. 위 코드는 2개의 동일한 소문자로 이루어진 26개의 Bigram을 Set에 반복적으로 추가합니다. (Set은 집합이므로) 26세트가 나와야한다고 생각하지만, 위의 코드는 260세트가 나오게 됩니다.
+
+위의 코드에서의 문제는 equals를 오버로딩하지 않아 그렇습니다.
+
+```java
+@Override public boolean equals(Object o) {
+  if (!(o instanceof Bigram))
+    return false;
+  Bigram b = (Bigram) o;
+  return b.first == first && b.second == second;
+}
+```
+
+이와 같이 구성할 때, 생각했던 26세트가 나오게 됩니다.
+
+즉, **super class를 재정의하는 경우 생각하는 모든 메서드 선언에 `Override` 어노테이션을 사용해야합니다.** `Override`어노테이션을 통해서 많은 오류로 부터 사용자를 보호할 수 있습니다.
+
+<br/>
+
+## Item 41. 타입을 정의하기 위해 `Marker Interface`를 사용합니다.
+
+`Marker Interface`는 메서드를 포함하지 않고 일부 구현 속성을 가지는 인터페이스입니다. (Ex. `Serializable` 인터페이스)
+
+`Marker Interface`는 `Marker Annotation`보다 2가지의 장점이 있습니다.
+
+- `marker interface`는 표시된 클래스의 인스턴스에 의해 구현되는 유형을 정의합니다.
+  - 이를 통해서 런타임까지 잡을 수 없는 에러를 컴파일 타임에 잡을 수 있습니다.
+- `marker interface`는 `marker interface` 보다 더 정확하게 타겟팅할 수 있습니다.
+  - `market annotation`은 타겟으로 적용해야하는 반면에, `marker interface`는 인터페이스를 확장하여, 적용할 수 있습니다.
+  - 그 대표적인 예시로 `Set Interface`를 들 수 있습니다.
+
+이에 반해 `Marker Annotation`의 장점은 Annotation의 일부라는 것입니다. 그렇기 때문에 `Marker Annotation`은 어노테이션 기반 프레임 워크의 일관성을 허용합니다.
+
+### Marker Interface와 Marker Annotation의 사용 경우.
+
+`Marker Interface`
+
+- 새로운 메서드가 연결되지 않은 유형과 정의하는 경우
+- 클래스와 인터페이스에서 적용되는 경우, 하나 이상의 메서드에서 필요하다고 판단되는 경우
+
+`Marker Annotation`
+
+- 클래스 및 인터페이스 이외의 프로그램 요소를 표시하는 경우
+- 어노테이션을 많이 사용하는 프레임 워커에 마커를 맞추려는 경우
+
+> Marker Interface (마커 인터페이스, 태그 인터페이스)
+
+내부에 메서드나 상수가 없는 인터페이스
+
+Ex) `Serializable` 인터페이스, `Clonable` 인터페이스
+
+> Marker Annotation (마커 어노테이션)
+
+멤버를 포함하지 않으며 데이터로 구성되지 않으며, 그저 어노테이션 선언을 표시하기 위해 존재합니다.
+
+Ex) `@Override`
