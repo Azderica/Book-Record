@@ -9,9 +9,9 @@ Java는 두 가지 특수 목적의 참조 유형 패밀리를 지원합니다.
 
 ## Item 34. 상수형 대신 열겨형을 사용합니다.
 
-열거형은 고정 세트로 구성된 유형이며, 이는 형식에 대한 안전성을 제공합니다. Java의 열거 형 유형의 기본 개념은 `public static final field`를 통해서 각 열거 형 상수에 대해 하나의 인스턴스를 내보내는 클래스입니다. 특히 이에 대한 액세스 가능한 생성자이기 때문에 수정할 수 없습니다.
+Enum 형은 고정 세트로 구성된 유형이며, 이는 형식에 대한 안전성을 제공합니다. Java의 Enum 형의 기본 개념은 `public static final field`를 통해서 각각의 Enum 상수를 하나의 인스턴스로 내보내는 클래스입니다. 특히 이에 대한 액세스가 불가능하기 때문에 수정할 수 없습니다.
 
-아래는 간단한 열거형(Enum) 타입입니다.
+아래는 간단한 Enum 형 타입입니다.
 
 ```java
 public enum Apple {FUJI, PIPPIN, GRANNY_SMITH}
@@ -56,7 +56,7 @@ public enum Planet {
 }
 ```
 
-이러한 코드는 데이터를 Enum 상수와 연결하려면 인스턴스 필드를 선언하고 데이터를 가져와 필드에 저장하는 생성자를 작성해야합니다.
+이러한 코드에서 데이터를 Enum 상수와 연결하려면 인스턴스 필드를 선언하고 데이터를 가져와 필드에 저장하는 생성자를 작성해줘야 합니다.
 
 ```java
 public class WeightTable {
@@ -158,16 +158,15 @@ enum PayrollDay {
 
 열거형의 Switch는 상수 특정 behavior을 enum types을 늘리는데 유용합니다.
 
-컴파일 타임에 멤버가 알려진 상수 집합이 필요할 때마다, 열거 형을 사용하는 것이 좋습니다. 다만, 열거형 유형의 상수 집합이 항상 고정되어 있을 필요는 없습니다.
+컴파일 타임에 멤버가 알려진 상수 집합이 필요할 때마다, Enum 형을 사용하는 것이 좋습니다. 다만, 열거형 유형의 상수 집합이 항상 고정되어 있을 필요는 없습니다.
 
-이를 정리하면 다음과 같습니다. int 상수에 비해 열거형 유형의 장점은 강력합니다.
-열거 형은 더 읽기 쉽고 안전하며, 강력합니다.
+이를 정리하면 다음과 같습니다. int 상수에 비해 Enum 형은 더 **읽기 쉽고 안전하며, 강력**합니다.
 
 <br/>
 
 ## Item 35. Ordinals 대신에 인스턴스 필드를 사용합니다.
 
-많은 열거형은 Int와 관련되어 있으며, ordinal 등을 통해서 위치를 반환할 수 있습니다. 그러나 이를 남용하면 유지보수 및 관리에서 문제가 생길 수 있습니다.
+많은 Enum 형은 Int와 관련되어 있으며, ordinal 등을 통해서 위치를 반환할 수 있습니다. 그러나 이를 남용하면 유지보수 및 관리에서 문제가 생길 수 있습니다.
 
 ```java
 // 문제가 되는 코드, 순서를 바꾸면 망함.
@@ -197,7 +196,7 @@ public enum Ensemble {
 
 ## Item 36. 비트 필드 대신에 `EnumSet`을 사용합니다.
 
-비트 필드 표현을 통하면 비트 연산을 통해서 합집합이나 교차 집합 연산을 효율적으로 계산할 수 있습니다. 그러나 이러한 방법 들은 int 열거 형 상수 등의 단점이 있기때문에, `java.util` 패키지의 `EnumSet`을 사용하는 것이 중요합니다.
+비트 필드 표현을 통하면 비트 연산을 통해서 합집합이나 교차 집합 연산을 효율적으로 계산할 수 있습니다. 그러나 이러한 방법들은 int형 상수이 가지고 있는 단점이 있기 때문에, `java.util` 패키지의 `EnumSet`을 사용하는 것이 중요합니다.
 
 이를 사용한 코드는 다음과 같습니다.
 
@@ -214,11 +213,11 @@ public class Text {
 text.applyStyles (EnumSet.of ( Style.BOLD, Style.ITALIC) );
 ```
 
-즉, 이를 요약하면, 열거형이 집합에서 사용되기 때문에 비트 필드로 표현할 이유가 없습니다.
+즉, 이를 요약하면, Enum 형이 집합에서 사용되기 때문에 비트 필드로 표현할 이유가 없습니다.
 
 <br/>
 
-## Item 37. Ordinals Indexing 대신 `EnumMap`을 사용합니다.
+## Item 37. `Ordinals Indexing` 대신 `EnumMap`을 사용합니다.
 
 때때로 ordinal 메서드를 사용해서 배열로 인덱싱 하는 코드를 볼 수 있습니다.
 
@@ -285,7 +284,7 @@ System.out.println (Arrays.stream (garden)
     ()-> new EnumMap <> (LifeCycle.class ) , toSet ())));
 ```
 
-두 개의 열거형(Enum)형을 사용하는 경우에도 EnumMap을 사용하는 것이 좀 더 안전성이 높습니다.
+두 개의 Enum 형을 사용하는 경우에도 EnumMap을 사용하는 것이 좀 더 안전성이 높습니다.
 
 ```java
 // 중첩 된 EnumMap을 사용하여 데이터를 열거 형 쌍과 연결
@@ -416,7 +415,7 @@ private static void test ( Collection <? extends Operation> opSet, double x, dou
 
 <br/>
 
-## Item 39. Naming Patterns 보다 Annotation을 선호합니다.
+## Item 39. `Naming Patterns` 보다 `Annotation`을 선호합니다.
 
 기존의 Naming Patterns의 문제는 다음과 같습니다.
 
@@ -508,9 +507,9 @@ public class RunTests {
 // Passed: 1, Failed: 3
 ```
 
-이외에도 여러 테스트 코드 및 어노테이션을 사용하는 방법이 있습니다. 다중 어노테이션이나, 특정 에러만 동작하게 하는 어노테이션을 구성할 수도 있습니다.
+이외에도 여러 테스트 코드 및 어노테이션을 사용하는 방법이 있습니다. 다중 어노테이션이나, 특정 에러만 동작하게 하는 어노테이션을 구성할 수도 있습니다. 이를 다 작성하기에는 내용이 많아서 작성하지는 않겠습니다.
 
-그러나 이러한 어노테이션에서의 핵심은 다음과 같습니다.
+이러한 어노테이션에서의 핵심은 다음과 같습니다.
 
 - 어노테이션을 사용할 수 있는 경우에는, Naming Patterns 을 사용할 필요가 없습니다.
 - 모든 프로그래머는 Java가 제공하는 사전 정의된 어노테이션을 사용하는 것이 중요합니다.
@@ -518,7 +517,7 @@ public class RunTests {
 
 <br/>
 
-## Item 40. Override Annotation을 일관되게 사용해야합니다.
+## Item 40. `Override` 어노테이션을 일관되게 사용해야합니다.
 
 Java 라이브러리에서는 여러 어노테이션이 포함되어 있는데, 그중에서 중요한 어노테이션으로 `@Override`를 고를 수 있습니다. `@Override`는 메서드 선언에서만 사용할 수 있으며, 어노테이션이 달린 메서드 선언이 상위 유형을 재정의 함을 나타냅니다. 이를 지속적으로 사용하면 많은 종류의 버그를 예방할 수 있습니다.
 
@@ -581,9 +580,8 @@ public class Bigram {
   - 이를 통해서 런타임까지 잡을 수 없는 에러를 컴파일 타임에 잡을 수 있습니다.
 - `marker interface`는 `marker interface` 보다 더 정확하게 타겟팅할 수 있습니다.
   - `market annotation`은 타겟으로 적용해야하는 반면에, `marker interface`는 인터페이스를 확장하여, 적용할 수 있습니다.
-  - 그 대표적인 예시로 `Set Interface`를 들 수 있습니다.
 
-이에 반해 `Marker Annotation`의 장점은 Annotation의 일부라는 것입니다. 그렇기 때문에 `Marker Annotation`은 어노테이션 기반 프레임 워크의 일관성을 허용합니다.
+이에 반해 `Marker Annotation`의 장점은 어노테이션의 일부라는 것입니다. 그렇기 때문에 `Marker Annotation`은 어노테이션 기반 프레임 워크의 일관성을 위해 사용할 때 좋습니다.
 
 ### Marker Interface와 Marker Annotation의 사용 경우.
 
