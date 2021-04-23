@@ -325,11 +325,196 @@ public enum Phase {
 
 <br/>
 
-## Item 38. 인터페이스로 확장 가능한 열거형을 모방합니다.
+## Item 38. 인터페이스로 확장 가능한 Enum을 모방합니다.
+
+표준 enum을 정의해서 임의의 인터페이스를 구현할 수 있습니다. 이를 표현한 코드는 다음과 같습니다.
+
+```java
+// 인터페이스를 사용하여 확장 가능한 열거 형 에뮬레이션
+public interface Operation {
+  double apply(double x, double y);
+}
+
+public enum BasicOperation implements Operation {
+  PLUS("+")  { public double apply(double x, double y) { return x + y; }},
+  MINUS("-") { public double apply(double x, double y) { return x - y; }},
+  TIMES("*") { public double apply(double x, double y) { return x * y; }},
+  DIVIDE("/"){ public double apply(double x, double y) { return x / y; }};
+
+  private final String symbol;
+
+  BasicOperation(String symbol) { this.symbol = symbol; }
+
+  @Override public String toString() { return symbol; }
+}
+```
+
+이를 확장한 enum입니다.
+
+```java
+// Emulated extension enum
+public enum ExtendedOperation implements Operation {
+  EXP("^") {
+    public double apply(double x, double y) {
+      return Math.pow(x, y);
+    }
+  },
+
+  REMAINDER("%") {
+    public double apply(double x, double y) {
+      return x % y;
+    }
+  };
+
+  private final String symbol;
+
+  ExtendedOperation(String symbol) { this.symbol = symbol; }
+
+  @Override public String toString() { return symbol; }
+}
+```
+
+이를 테스트하는 코드는 다음과 같습니다.
+
+```java
+public static void main (String [] args) {
+  double x = Double.parseDouble (args [0]);
+  double y = Double.parseDouble (args [1]);
+  test ( ExtendedOperation.class , x, y);
+}
+
+private static <T extends Enum <T> & Operation> void test (
+    Class <T> opEnumType , double x, double y) {
+  for (Operation op : opEnumType.getEnumConstants ())
+    System.out.printf ( "%f %s %f = %f %n ", x, op, y, op.apply (x, y));
+}
+```
+
+이 방법이 아니더라도, 아래처럼 `Collection<? extends Operation> Class T`를 사용할 수 있습니다. 이는 덜 복잡하고 유연합니다. (다만, EnumSet이나 EnumMap을 사용할 수 없는 코드입니다.)
+
+```java
+public static void main (String [] args) {
+  double x = Double.parseDouble (args [0]);
+  double y = Double.parseDouble (args [1]);
+  test ( Arrays.asList (ExtendedOperation.values ​​()) , x, y);
+}
+
+private static void test ( Collection <? extends Operation> opSet, double x, double y) {
+  for (Operation op : opSet)
+    System.out.printf ( "%f %s %f = %f %n", x, op, y, op.apply (x, y));
+}
+```
+
+두 코드 모두 결과값은 이와 같습니다.
+
+```
+4.000000 ^ 2.000000 = 16.000000
+4.000000 % 2.000000 = 0.000000
+```
+
+결론적으로 확장 가능한 Enum 유형을 작성할 수는 없지만, 인터페이스를 구현하는 Enum 타입과 함께 제공되는 인터페이스를 작성해서 동작시킬 수 있습니다.
 
 <br/>
 
 ## Item 39. Naming Patterns 보다 Annotation을 선호합니다.
+
+기존의 Naming Patterns의 문제는 다음과 같습니다.
+
+- 기존의 JUnit3의 경우, 메서드 명이 test로 시작하지 않으면 실패합니다.
+- 적절한 프로그램 요소에서만 사용되도록 할 수 없습니다.
+- 매개 변수 값을 프로그램 요소와 연관시키는 좋은 방법을 제공하지 않습니다.
+
+JUnit4부터는 annotation을 통해서 테스트 프레임 워크를 구성할 수 있게 되었습니다.
+
+```java
+// Marker annotation type declaration
+import java.lang.annotation.*;
+
+/**
+ *  - 주석이 달린 메서드가 테스트 메서드임을 나타냅니다.
+ *  - 매개 변수가없는 정적 메서드에만 사용합니다.
+ */
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Test { }
+```
+
+이를 사용하는 코드가 아래와 같이 있을 때, 되는 코드와 안되는 코드를 보면 그 차이를 확인할 수 있습니다.
+
+```java
+// marker 어노테이션이 포함된 프로그램
+public class Sample {
+  @Test public static void m1() { }  // Test should pass
+
+  public static void m2() { }
+
+  @Test public static void m3() {     // Test should fail
+    throw new RuntimeException("Boom");
+  }
+
+  public static void m4() { }
+
+  @Test public void m5() { } // INVALID USE: nonstatic method
+
+  public static void m6() { }
+
+  @Test public static void m7() {    // Test should fail
+    throw new RuntimeException("Crash");
+  }
+
+  public static void m8() { }
+}
+```
+
+이 위의 Sample 클래스에서 Test 어노테이션이 포함된 테스트 메서드는 4가지이나, m5은 static을 붙이지 않았기 때문에 유효하지 않습니다. m1만 성공을 하고, m3과 m7은 실패하게 됩니다.
+
+이를 아래의 코드로 실행할 수 있습니다.
+
+```java
+// Program to process marker annotations
+import java.lang.reflect.*;
+
+public class RunTests {
+  public static void main(String[] args) throws Exception {
+    int tests = 0;
+    int passed = 0;
+    Class<?> testClass = Class.forName(args[0]);
+
+    for (Method m : testClass.getDeclaredMethods()) {
+      if (m.isAnnotationPresent(Test.class)) {
+        tests++;
+        try {
+          m.invoke(null);
+          passed++;
+        } catch (InvocationTargetException wrappedExc) {
+          Throwable exc = wrappedExc.getCause();
+          System.out.println(m + " failed: " + exc);
+        } catch (Exception exc) {
+          System.out.println("Invalid @Test: " + m);
+        }
+      }
+    }
+
+    System.out.printf("Passed: %d, Failed: %d%n",
+        passed, tests - passed);
+  }
+}
+
+// output
+// public static void Sample.m3() failed: RuntimeException: Boom
+// Invalid @Test: public void Sample.m5()
+// public static void Sample.m7() failed: RuntimeException: Crash
+// Passed: 1, Failed: 3
+```
+
+이외에도 여러 테스트 코드 및 어노테이션을 사용하는 방법이 있습니다. 다중 어노테이션이나, 특정 에러만 동작하게 하는 어노테이션을 구성할 수도 있습니다.
+
+그러나 이러한 어노테이션에서의 핵심은 다음과 같습니다.
+
+- 어노테이션을 사용할 수 있는 경우에는, Naming Patterns 을 사용할 필요가 없습니다.
+- 모든 프로그래머는 Java가 제공하는 사전 정의된 어노테이션을 사용하는 것이 중요합니다.
+- 또한 IDE나 분석 툴에서 제공하는 어노테이션을 사용하는 것이 중요합니다.
 
 <br/>
 
