@@ -123,6 +123,44 @@ service.execute (()-> action ());
 
 ## Item 44. 표준 기능 인터페이스를 선택합니다.
 
+Java에 람다가 들어오고 난 이후, API 작성 가이드가 변경되었습니다.
+
+대표적으로 Map을 쓰는 경우에는 LinkedHashMap 등을 사용하는 것이 좋습니다. 예를 들어 Map에서 removeEldestEntry를 사용한다고 했을 때, LinkedHashMap 의 경우에는 삭제할 수 있지만 Map의 경우에는 수동적으로 생성해야합니다.
+
+```java
+// 불필요한 기능 인터페이스; 대신 표준을 사용하십시오.
+@FunctionalInterface interface EldestEntryRemovalFunction <K, V> {
+  boolean remove (Map <K, V> map, Map.Entry <K, V> eldest);
+}
+```
+
+즉, 표준 기능 인터페이스의 기능을 사용하는 경우, **특수 목적으로 만든 인터페이스보다는 표준 기능 인터페이스를 사용하는 것이 중요합니다.**
+
+아래는 기본적인 기능 인터페이스입니다.
+
+| Interface           | Function Signature     | Example               |
+| ------------------- | ---------------------- | --------------------- |
+| `UnaryOperator<T>`  | `T apply (T t)`        | `String::toLowerCase` |
+| `BinaryOperator<T>` | `T apply (T t1, T t2)` | `BigInteger::add`     |
+| `Predicate<T>`      | `boolean test (T t)`   | `Collection::isEmpty` |
+| `Function<T>`       | `R apply (T t)`        | `Arrays::asList`      |
+| `Supplier<T>`       | `T get ()`             | `Instant::now`        |
+| `Consumer<T>`       | `void accept (T t)`    | `System.out::println` |
+
+이를 사용해서 여러 변형 케이스로 만들 수도 있습니다. 이를 사용하는 여러 변형 케이스가 존재하지만, 대부분의 표준 기능 인터페이스는 기본 유형에 대한 지원을 위해 존재합니다.
+
+즉, 기본 기능 인터페이스 대신 다른 요소(boxed primitives)가 있는 인터페이스를 사용하는 것은 좋지않습니다.
+
+목적에 맞는 **인터페이스가 필요한 경우**에는 아래의 조건인 경우인지를 잘 생각해봐야합니다.
+
+- 일반적으로 사용되며 설명이 포함된 이름이 도움이 될 수 있는 경우.
+- 관련된 강력한 결합(contract)가 있는 경우.
+- 사용자 커스텀 메소드가 이점을 가지고 있는 경우.
+
+다만 이러한 경우에는 신중하게 설계가 필요합니다. 그리고, `@FunctionalInterface`와 같이 기능적 인터페이스에는 어노테이션을 추가해야합니다.
+
+요약하면, Java에서는 람다가 있기 때문에 이를 생각하고 API를 생계하는 것이 중요합니다.
+
 <br/>
 
 ## Item 45. 스트림을 신중하게 사용합니다.
