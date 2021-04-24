@@ -82,6 +82,43 @@ public enum Operation {
 
 ## Item 43. 람다보다 메서드 참조를 선택합니다.
 
+익명 클래스에 비해 람다의 주요 장점은 더 간결한 것입니다. 그러나 자바에서는 메서드 참조를 하는 람다보다 더 간결한 함수 객체를 생성하는 방법이 존재합니다.
+
+```java
+// 람다식을 사용한 경우.
+map.merge (key, 1, (count, incr)-> count + incr);
+
+// 더 짧은 코드, 메서드 참조
+map.merge (key, 1, Integer::sum);
+```
+
+메서드에 파라미터가 많을수록 메서드 참조로 제거할 수 있는 상용구가 많아집니다. 다음은 그에 대한 주의사항입니다.
+
+- 람다로 할 수 없는 경우, 메서드 참조로도 할 수 있는 방법은 없습니다.
+- IDE로 프로그래밍하는 경우, 가능한 경우에 한해 람다를 메서드 참조로 대체할 수 있습니다.
+
+그러나 항상 이가 옳지는 않습니다. 특히 메서드가 같은 클래스에 있을 때 자주 발생합니다.
+
+```java
+// 메서드 참조
+service.execute (GoshThisClassNameIsHumongous :: action);
+
+// 람다식 사용 (여기서는 이게 더 좋음.)
+service.execute (()-> action ());
+```
+
+메서드 참조의 종류는 다음과 같습니다.
+
+| Method Ref Type   | Example                  | Lambda Equivalent                                        |
+| ----------------- | ------------------------ | -------------------------------------------------------- |
+| Static            | `Integer::parseInt`      | `str -> Integer.parseInt(str)`                           |
+| Bound             | `Instant.now()::isAfter` | `Instant then = Instant.now();`<br/>`t->then.isAfter(t)` |
+| UnBound           | `String::toLowerCase`    | `str -> str.toLowerCase()`                               |
+| Class Constructor | `TreeMap<K, V>::new`     | `() -> new TreeMap<K, V>`                                |
+| Array Constructor | `int[]::new`             | `len -> new int[len]`                                    |
+
+이를 정리하면 메서드 참조는 종종 람다보다 간결한 대안을 제공합니다. 따라서, **메소드 참조가 더 짧고 명확한 경우에는 이를 사용하고 그렇지 않은 경우에는 람다를 사용하는 것이 중요합니다.**
+
 <br/>
 
 ## Item 44. 표준 기능 인터페이스를 선택합니다.
