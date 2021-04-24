@@ -165,6 +165,104 @@ Java에 람다가 들어오고 난 이후, API 작성 가이드가 변경되었�
 
 ## Item 45. 스트림을 신중하게 사용합니다.
 
+Stream API는 대량 작업을 순차적으로 또는 병렬적으로 수행하는 작업을 쉽게하기 위해서 Java 8에 추가되었습니다.
+
+Stream API는 다음의 특징을 가집니다.
+
+- Stream pipeline은 source stream과 0개 이상의 intermediate operation, 하나의 terminal operation으로 나눠집니다.
+- Stream pipeline은 lazily하게 평가됩니다. (호출될 때까지 시작되지 않으며, 필요없는 데이터 요소는 계산되지 않습니다.)
+- Stream API는 유연합니다. (모든 호출이 단일 표현식으로 연결 가능합니다.)
+- Stream pipeline은 순차적으로 실행됩니다.
+- Stream API는 다재다능하지만, 항상 이렇게 해야하지는 않습니다. (잘못 사용하면, 유지보수성이 떨어집니다.)
+
+Stream을 남용한 코드는 다음과 같습니다.
+
+```java
+// Overuse of streams - don't do this!
+public class Anagrams {
+  public static void main(String[] args) throws IOException {
+    Path dictionary = Paths.get(args[0]);
+    int minGroupSize = Integer.parseInt(args[1]);
+
+    try (Stream<String> words = Files.lines(dictionary)) {
+      words.collect(groupingBy(word -> word.chars()
+        .sorted()
+        .collect(StringBuilder::new, (sb, c) -> sb.append((char) c),
+          StringBuilder::append).toString()))
+        .values().stream()
+        .filter(group -> group.size() >= minGroupSize)
+        .map(group -> group.size() + ": " + group)
+        .forEach(System.out::println);
+    }
+  }
+}
+```
+
+이 경우, 프로그램을 읽고 유지하기가 매우 어렵습니다. Stream을 잘사용한 케이스는 다음과 같습니다.
+
+```java
+// 세련된 스트림 사용으로 명확성과 간결함 향상
+public class Anagrams {
+  public static void main(String[] args) throws IOException {
+    Path dictionary = Paths.get(args[0]);
+    int minGroupSize = Integer.parseInt(args[1]);
+
+    try (Stream<String> words = Files.lines(dictionary)) {
+      words
+        .collect(groupingBy(word -> alphabetize(word)))
+        .values().stream()
+        .filter(group -> group.size() >= minGroupSize)
+        .forEach(g -> System.out.println(g.size() + ": " + g));
+      }
+  }
+// alphabetize method is the same as in original version
+...
+}
+```
+
+이와 같이 표현하면, 프로그램을 이해하기 어렵지 않습니다. 그리고, 람다 매개 변수의 이름도 신중하게 선정해야합니다. 명시적 유형이 없기 때문에, 스트림 파이프파린의 가독성을 높이기 위해서라도 이름 선정은 중요한 역할을 가지고 있습니다.
+
+또한, **파이프 라인에서는 명시적인 유형 정보와 임시 변수가 없기 때문에 도우미 메서드를 사용하는 것은 반복 코드보다 스트림 파이프라인에서 가독성을 위해 매우 중요합니다.**
+
+예를 들어, 아래 코드는 이러한 스트림을 잘못 사용한 케이스입니다.
+
+```java
+"Hello world!".chars().forEach(System.out :: print);
+// output : 721011081081113211911111410810033 (type을 모르므로)
+
+"Hello world!".chars().forEach(x-> System.out.print ((char) x));
+// 수정한 케이스, but 이렇게 사용하는 것은 좋지않음
+```
+
+이와 같이 스트림 파이프라인에서 사용할 수 없는 몇가지 작업이 있습니다.
+
+- 코드 블록에서는 범위의 모든 지역 변수를 읽거나 수정이 가능하지만, 람다에서는 최종만 읽을 수 있기때문에 지역변수를 수정할 수 없습니다.
+- 코드 블록 return에서 둘러싸는 메서드 break, continue, 예외 throw 등이 가능하지만 람다에서는 불가능합니다.
+
+그러나 스트림에서 적절한 동작은 다음과 같습니다.
+
+- 요소 시퀀스를 균일하게 변경
+- 요소 시퀀스 필터링
+- 단일 작업을 사용하여 요소 시퀀스 결합(요소 추가 및 최소값 계산)
+- 요소의 시퀀스를 컬렉션으로 합쳐서, 공통 속성별로 그룹화
+- 일부 기준을 충족하는 요소에 대한 요소 시퀀스를 검색
+
+이러한 경우에 매우 좋습니다.
+
+스트림을 사용하면 아래처럼 이쁜 코드를 구성할 수 있습니다.
+
+```java
+// 가장 큰 메르센 소수 20개를 출력하는 코드.
+public static void main(String[] args) {
+  primes().map(p -> TWO.pow(p.intValueExact()).subtract(ONE))
+    .filter(mersenne -> mersenne.isProbablePrime(50))
+    .limit(20)
+    .forEach(System.out::println);
+}
+```
+
+그러나 항상 Stream을 쓸지, 혹은 iteration을 사용할지는 애매한 경우가 많습니다. 이러한 경우에서는 개발자의 취향에 가깝습니다. 즉, **어떤 작업이 Stream이나 Iteration에 의해 더 나은건지 확실하지 않기 때문에, 두가지 모두를 시도하고 어떤 것이 나을지 고르는 것이 중요합니다.**
+
 <br/>
 
 ## Item 46. 스트림에서 부작용이 없는 함수를 선택합니다.
