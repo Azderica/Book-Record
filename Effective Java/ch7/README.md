@@ -267,6 +267,42 @@ public static void main(String[] args) {
 
 ## Item 46. 스트림에서 부작용이 없는 함수를 선택합니다.
 
+스트림은 단순한 API가 아니라, 함수형 프로그래밍을 기반으로 하는 패러다임입니다. 이러한 스트림이 제공해야하는 표현성과 속도, 경우에 따라 병렬화 가능성을 얻기위해서는 패러다임과 API를 채택해야합니다.
+
+스트림 패러다임의 가장 중요한 부분은 각 단계의 결과가 이전 단계의 `pure function`에 최대한 가까운 변환 시퀀스로 계산을 구성하는 것입니다. (`pure function`은 결과가 입력에만 의존하는 함수입니다. 즉, 변경 가능한 상태에 의존하지 않으며 어떤 상태도 업데이트가 없습니다.)
+
+```java
+Map <String, Long> freq = new HashMap <> ();
+
+// 잘못 스트림을 사용한 경우.
+try (Stream <String> words = new Scanner (file) .tokens ()) {
+  words.forEach (word-> {
+    freq.merge (word.toLowerCase (), 1L, Long::sum);
+  });
+}
+
+// 스트림 API를 잘 사용한 경우.
+try (Stream <String> words = new Scanner (file) .tokens ()) {
+  freq = words.collect(groupingBy(String::toLowerCase, counting()));
+}
+```
+
+위와 같이 `forEach` 연산은 동작 연산을 수행하지 않게 **스트림 결과를 보고하는 목적으로 사용**해야합니다.
+
+```java
+// freq 테이블에서 상위 10 개 단어 목록을 가져 오는 파이프 라인
+List <String> topTen = freq.keySet().stream()
+    .sorted (comparison(freq::get).reversed()).limit(10)
+    .collect (toList ());
+```
+
+그리고 해당 코드처럼, Collectors의 member를 정적으로 가져오는 것이 스트림 파이프라인을 더 읽기 쉽게 만듭니다.
+
+이외에도 여러개의 Collectors들이 존재합니다. 스트림 파이프 라인 프로그래밍의 본질은 부작용이 없는 함수 객체를 구성하는 것입니다. 이는 스트림 및 관련 개체에 전달된 많은 함수 개체 모두에 적용됩니다.
+
+- `forEach` : 계산을 수행하는 것이 목적이 아니라, 스트림에 의해 수행된 계산 결과를 보고해야하는 곳에 사용해야합니다.
+- `toList`, `toSet`, `toMap`, `groupingBy`, `joining` 등의 Collector factories를 사용하는 것이 중요합니다.
+
 <br/>
 
 ## Item 47. Return 타입으로 스트림보다는 컬렉션을 선택합니다.
