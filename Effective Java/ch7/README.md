@@ -307,6 +307,131 @@ List <String> topTen = freq.keySet().stream()
 
 ## Item 47. Return 타입으로 스트림보다는 컬렉션을 선택합니다.
 
+많은 메서드들은 element 시퀀스를 반환합니다. 그러나 Java 8에서 스트림이 여러 플랫폼에 추가되어서 sequence 반환 방법에 대해 적절한 반환 유형을 선정하는 방법이 어려워졌습니다. 다만 이에 대한 명확한 해결책은 없습니다.
+
+```java
+// Stream <E>에서 Iterable <E> 로의 Adapter
+public static <E> Iterable <E> iterableOf (Stream <E> stream) {
+  return stream::iterator;
+}
+
+// Iterable <E>에서 Stream <E> 로의 Adapter
+public static <E> Stream <E> streamOf (Iterable <E> iterable) {
+  return StreamSupport.stream (iterable.spliterator (), false);
+}
+```
+
+다음과 같이 for-each 문으로 사용할 수 있습니다. Collection 인터페이스 하위 유형 Iterable 및 보유 stream이 반복 스트림 액세스를 모두 제공하기 때문에, **Collection이나 적절한 subType 등이 public, sequence-returning 메서드에 가장 적합합니다.** 다만, **Collection 반환을 위해 메모리에 큰 시퀀스를 저장하는 것은 좋지 않습니다.**
+
+이를 사용한 코드는 아래와 같습니다.
+
+```java
+// Returns the power set of an input set as custom collection
+public class PowerSet {
+  public static final <E> Collection<Set<E>> of(Set<E> s) {
+    List<E> src = new ArrayList<>(s);
+    if (src.size() > 30)
+      throw new IllegalArgumentException("Set too big " + s);
+    return new AbstractList<Set<E>>() {
+      @Override public int size() {
+        return 1 << src.size(); // 2 to the power src.size()
+      }
+
+      @Override public boolean contains(Object o) {
+        return o instanceof Set && src.containsAll((Set)o);
+      }
+
+      @Override public Set<E> get(int index) {
+        Set<E> result = new HashSet<>();
+        for (int i = 0; index != 0; i++, index >>= 1)
+          if ((index & 1) == 1)
+            result.add(src.get(i));
+        return result;
+      }
+    };
+  }
+}
+```
+
+```java
+// 입력 목록의 모든 하위 목록 스트림을 반환합니다.
+public class SubLists {
+  public static <E> Stream <List<E>> of (List <E> list) {
+    return Stream.concat (Stream.of (Collections.emptyList) ()),
+        prefixes (list) .flatMap (SubLists :: suffixes));
+  }
+
+  private static <E> Stream <List<E>> prefixes (List <E> list) {
+    return IntStream.rangeClosed (1, list.size ())
+        .mapToObj (end-> list.subList (0, end)) ;
+  }
+
+  private static <E> Stream <List<E>> suffixes (List <E> list) {
+    return IntStream.range (0, list.size ())
+        .mapToObj (start-> list.subList (start, list.size ( )));
+  }
+}
+```
+
+```java
+// 입력 목록의 모든 하위 목록 스트림을 반환합니다.
+public static <E> Stream <List <E >> of (List <E> list) {
+  return IntStream.range (0, list.size ())
+      .mapToObj (
+        start- > IntStream.rangeClosed (start + 1, list.size ())
+            .mapToObj (end-> list.subList (start, end)))
+      .flatMap (x-> x);
+}
+```
+
+이와 같이, element 시퀀스를 반환하는 메서드를 작성할 때, 일부 사용자는 stream으로 처리하고 다른 사용자는 iteration으로 사용하는 것을 좋아할 수 있습니다. 그러나 둘다 잘못된 것이 아니고, 이 두개를 필요에 따라 사용하는 것이 좋습니다. 그리고 Collections로 반환할 수 있으면 좋습니다. (작은 경우, ArrayList / 큰 경우, 사용자 지정 컬렉션)
+
 <br/>
 
 ## Item 48. 스트림을 병렬로 만들 때 주의합니다.
+
+Java는 동시 프로그래밍 작업을 용이하게 하기 위해 많은 노력을 했습니다.
+
+예를 들어 다음의 코드를 병렬로 구성하는 경우를 봐야합니다.
+
+```java
+// 처음 20 개의 Mersenne 소수를 생성하는 스트림 기반 프로그램
+public static void main (String [] args) {
+  primes (). map (p-> TWO.pow (p.intValueExact ()). subtract (ONE))
+      .filter (mersenne-> mersenne.isProbablePrime (50))
+      .limit ( 20) .forEach (System.out :: println);
+}
+
+static Stream <BigInteger> primes () {
+  return Stream.iterate (TWO, BigInteger :: nextProbablePrime);
+}
+```
+
+이 작업을 parallel() 스트림 파이프 라인에 호출을 추가해서 속도를 높일려고하면, 이를 병렬화 하는 방법을 모르기 때문에 실패합니다. 즉, **최상의 상황에서 Stream.iteration이거나 intermediate operation limited가 사용되는 경우 파이프 라인을 병렬화해도 성능적인 이득은 없습니다.** 따라서 스트림 파이프라인을 무차별적으로 병렬화하는 것이 좋지 않습니다.
+
+일반적으로 `ArrayList`, `HashMap`, `HashSet`, `ConcurrentHashMap`, `arrays`, int 범위, long 범위 등이 병렬 처리의 성능 향상을 통해 스트림에 가장 적합합니다.
+
+스트림을 병렬화를 하게 되었을 때, 장애 및 성능 저하가 발생할 수 있게 되었으며 잘못된 결과 및 예측할 수 없는 동작으로 이어지게 됩니다.
+
+다만 적절한 상황에서, 스트림 파이프라인에 parallel(병렬) 호출을 추가하는 것만으로 프로세서 코어 수에서 거의 선형에 가까운 속도 향상을 달성할 수 있습니다.
+
+```java
+// 소수 계산 스트림 파이프 라인-병렬화의 이점
+static long pi (long n) {
+  return LongStream.rangeClosed (2, n)
+      .mapToObj (BigInteger :: valueOf)
+      .filter (i-> i.isProbablePrime (50))
+      .count();
+}
+
+// 아래는 parallel()을 통해 시간 단축을 한 경우입니다.
+static long pi (long n) {
+  return LongStream.rangeClosed (2, n)
+      .parallel ()
+      .mapToObj (BigInteger :: valueOf)
+      .filter (i-> i.isProbablePrime (50 ))
+      .count ();
+}
+```
+
+**계산의 정확성을 유지하고 속도를 높일 것이라고 믿을 충분한 이유가 없는 경우, 스트림 파이프 라인을 병렬화하는 것은 좋지않습니다.** 이를 사용할 때는, 올바른 상태를 유지하고, 신중한 성능 측정을 수행해서 사용하는 것이 꼭 필요합니다.
