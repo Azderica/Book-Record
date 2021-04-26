@@ -6,7 +6,7 @@
 - [제네릭](./ch5/README.md)
 - [Enum형과 어노테이션](./ch6/README.md)
 - [람다와 스트림](./ch7/README.md)
-- Methods
+- [메서드](./ch8/README.md)
 - General Programming
 - Exceptions
 - Concurrency
