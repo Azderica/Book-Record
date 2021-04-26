@@ -25,9 +25,7 @@ Collections.sort (words,
     (s1, s2)-> Integer.compare (s1.length (), s2.length () ));
 ```
 
-프로그램이 명확해지지 않는 한, 모든 람다 파라미터의 유형을 생략하는 이 좋습니다. (컴파일러가 이를 유추할 수 없기 때문에 그렇습니다.)
-
-앞선 주제에서 말했듯이 Raw 타입을 사용하지 않는 것이 여기서 중요합니다.
+프로그램이 명확해지지 않는 한, 모든 람다 파라미터의 유형을 생략하는 방법이 좋습니다. (컴파일러가 이를 유추할 수 없기 때문에 그렇습니다.) 그렇기 때문에 **앞선 주제에서 말했듯이 Raw 타입을 사용하지 않는 것**이 여기서 중요합니다.
 
 또한 이러한 람다식을 통해서 더 짧게 만들 수 있고, 의미적으로도 잘 보일 수 있습니다.
 
@@ -321,7 +319,7 @@ public static <E> Stream <E> streamOf (Iterable <E> iterable) {
 }
 ```
 
-다음과 같이 for-each 문으로 사용할 수 있습니다. Collection 인터페이스 하위 유형 Iterable 및 보유 stream이 반복 스트림 액세스를 모두 제공하기 때문에, **Collection이나 적절한 subType 등이 public, sequence-returning 메서드에 가장 적합합니다.** 다만, **Collection 반환을 위해 메모리에 큰 시퀀스를 저장하는 것은 좋지 않습니다.**
+다음과 같이 for-each 문으로 변환 할 수 있습니다. Collection 인터페이스 하위 유형 Iterable 및 보유 stream이 반복 스트림 액세스를 모두 제공하기 때문에, **Collection이나 적절한 subType 등이 public, sequence-returning 메서드에 가장 적합합니다.** 다만, **Collection 반환을 위해 메모리에 큰 시퀀스를 저장하는 것은 좋지 않습니다.**
 
 이를 사용한 코드는 아래와 같습니다.
 
@@ -392,7 +390,7 @@ public static <E> Stream <List <E >> of (List <E> list) {
 
 Java는 동시 프로그래밍 작업을 용이하게 하기 위해 많은 노력을 했습니다.
 
-예를 들어 다음의 코드를 병렬로 구성하는 경우를 봐야합니다.
+예를 들어 다음의 코드를 병렬로 구성하는 경우입니다.
 
 ```java
 // 처음 20 개의 Mersenne 소수를 생성하는 스트림 기반 프로그램
