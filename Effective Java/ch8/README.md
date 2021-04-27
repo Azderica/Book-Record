@@ -39,6 +39,54 @@ private static void sort(long a[], int offset, int length) {
 
 ## Item 50. 필요할 때, 방어적 사본을 생성합니다.
 
+Java의 장점 중 하나는, safe language입니다. 이는 메모리 손상 오류에 영향을 받지않음을 의미하며, 이를 통해서 어떤 일이 일어나도 불변성이 유지될 것이라 확신하고 진행할 수 있습니다.
+
+다만, 이 경우에도 코드를 개판... 으로 짜면 문제가 발생할 수 있습니다. 따라서 **클래스의 클라이언트가 위험하게 구성될 수 있다는 가정하에, 방어적으로 프로그래밍해야합니다.**
+
+```java
+// Broken "immutable" time period class
+public final class Period {
+  private final Date start;
+  private final Date end;
+
+  public Period(Date start, Date end) {
+    if (start.compareTo(end) > 0)
+      throw new IllegalArgumentException(
+    start + " after " + end);
+    this.start = start;
+    this.end   = end;
+  }
+
+  public Date start() { return start; }
+
+  public Date end() {   return end;   }
+
+  ...    // Remainder omitted
+}
+
+public static void main() {
+  // Period 인스턴스의 내부를 공격한 경우.
+  Date start = new Date();
+  Date end = new Date();
+  Period p = new Period(start, end);
+  end.setYear(78); // p 내부가 수정됩니다.
+}
+```
+
+이러한 경우처럼, Date가 더이상 사용되지 않으면 이를 새로운 코드에서 사용하면 안됩니다. 따라서 이러한 문제에서 인스턴스 내부를 보호하려면, **생성자에 대한 각 변경 가능한 매개 변수의 방어적 복사본을 만드는 것이 중요합니다.**
+
+```java
+// 변경된 생성자, 매개 변수의 방어적 복사본을 만듭니다.
+public Period (Date start, Date end) {
+  this.start = new Date (start.getTime ());
+  this.end = new Date (end.getTime ());
+
+  if (this.start.compareTo (this.end)> 0)
+    throw new IllegalArgumentException (
+  this.start + "after"+ this.end);
+}
+```
+
 <br/>
 
 ## Item 51. 메서드 서명을 신중하게 설계합니다.
