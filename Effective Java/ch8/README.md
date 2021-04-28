@@ -87,6 +87,32 @@ public Period (Date start, Date end) {
 }
 ```
 
+이렇게 사용하면 위의 문제를 해결할 수 있습니다. 그러나 아래처럼, 데이터를 바꿀 수 도 있습니다.
+
+```java
+Date start = new Date ();
+Date end = new Date ();
+Period p = new Period(start, end);
+p.end().setYear(78); // p의 내부를 수정합니다!
+```
+
+이를 해결할려면 다음처럼 또 할 수 있습니다.
+
+```java
+// 수리 된 접근 자-내부 필드의 방어용 복사본 만들기
+public Date start () {
+  return new Date (start.getTime ());
+}
+
+public Date end () {
+  return new Date (end.getTime ());
+}
+```
+
+이와 같이 새로운 생성자와 새로운 접근자를 사용함을 통해서 방어적 코딩을 할 수 있습니다.
+
+**클라이언트에서 클래스를 가져오거나, 반환하는 경우에 변경 가능한 요소가 있는 경우에는 클래스는 구성 요소를 방어적으로 복사해야합니다. 복사를 할 수 없는 환경이면, 사용하는 클라이언트를 신뢰하는 구조로 가야하면서, 이를 수정하지 않도록 문서화시켜야합니다.**
+
 <br/>
 
 ## Item 51. 메서드 서명을 신중하게 설계합니다.
