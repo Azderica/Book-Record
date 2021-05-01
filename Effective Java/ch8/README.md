@@ -361,6 +361,105 @@ public Cheese [] getCheeses () {
 
 ## Item 55. Optionals를 신중하게 반환합니다.
 
+Java 8 이전에는 특정 상황에서 값을 반환 할 수 없는 메서드를 작성할 때, 취할 수 있는 두 가지 접근 방식이 있습니다. 보통 예외를 throw 하거나 반환할 수 있습니다. 하지만 디 두 접근 방식 모두 완벽하지는 않습니다.
+
+Java 8에는 값을 반환 할 수 없는 메서드를 작성하는 세번 째 접근 방식이 있습니다. (`Optional<T>`)
+
+`Optional<T>`는 개념적으로 T를 반환하지만 그렇게 할 수 없는 경우에는 대신에 Optional<T>를 반환합니다. `Optional`의 반환 값은 예외를 던지거나, null을 던지는 거보다 유연하고 쉽습니다.
+
+```java
+// 컬렉션에서 최대 밧 반환, 비어있는 경우 예외 발생
+public static <E extends Comparable<E>> E max(Collection<E> c) {
+  if (c.isEmpty())
+    throw new IllegalArgumentException("Empty collection");
+
+  E result = null;
+  for (E e : c)
+    if (result == null || e.compareTo(result) > 0)
+      result = Objects.requireNonNull(e);
+
+  return result;
+}
+```
+
+이를 Optional릍 통해서 수정할 수 있습니다.
+
+```java
+public static <E extends Comparable<E>> Optional<E> max(Collection<E> c) {
+  if (c.isEmpty())
+    return Optional.empty();
+
+  E result = null;
+  for (E e : c)
+    if (result == null || e.compareTo(result) > 0)
+      result = Objects.requireNonNull(e);
+
+  return Optional.of(result);
+}
+```
+
+다만, `Optional-returning` 메서드에서 null 값을 반환하면 안됩니다. 이는 Optional의 목적을 무시하는 것입니다.
+
+`Optional`을 통해서 다른 메서드에서도 사용할 수 있습니다.
+
+```java
+// 컬렉션의 최대 값을 Optional <E>로 반환-스트림을 사용
+public static <E extends Comparable <E >> Optional <E> max (Collection <E> c) {
+  return c.stream().max(Comparator.naturalOrder());
+}
+```
+
+```java
+// 선택 사항을 사용하여 선택한 기본값 제공
+String lastWordInLexicon = max(words).orElse( "No words ...");
+```
+
+```java
+// 선택 사항을 사용하여 선택한 예외 발생
+Toy myToy = max (toys).orElseThrow(TemperTantrumException::new);
+```
+
+```java
+// 반환 값이 있다는 것을 알고있을 때 선택 사항 사용
+Element lastNobleGas = max(Elements.NOBLE_GASES).get() ;
+```
+
+위의 이러한 방법들을 통해서 적절한 해결책을 찾지못한 경우에는 Optional의 `isPresent().true`를 사용하는 것도 나쁘지 않습니다. 또한 snippset을 사용하는 것도 좋습니다.
+
+```java
+// snippset 코드
+Optional<ProcessHandle> parentProcess = ph.parent();
+System.out.println("Parent PID: " + (parentProcess.isPresent() ?
+  String.valueOf(parentProcess.get().pid()) : "N/A"));
+
+// Optional의 map 기능을 사용한 코드
+System.out.println("Parent PID: " +
+  ph.parent().map(h -> String.valueOf(h.pid())).orElse("N/A"));
+```
+
+자바의 Stream을 사용하는 경우, 아래처럼 Optional을 적용할 수 있습니다. (Java9에서는 스트림에 Optional이 추가되었습니다.)
+
+```java
+// Java 8
+streamOfOptionals
+  .filter(Optional::isPresent)
+  .map(Optional::get)
+
+// Java 9
+streamOfOptionals
+  .flatMap(Optional::stream)
+```
+
+그러나 모든 반환 유형에서 적용되는 것은 아닙니다. `Collections`, `Maps`, `Streams`, `Arrays`, `Optionals` 을 포함하는 컨테이너 유형은 옵션으로 래핑해서는 안됩니다. 이 경우에는 Optional<List<T>>를 반환하는 것 보다는 List<T>를 반환하는 것이 좋습니다.
+
+결과를 반환 할 수 없는 경우, `Optional<T>`를 반환하는 메서드를 선언해야하며, 결과가 반환되지 않으면 클라이언트가 특별한 처리를 수행해야합니다.
+
+boxed primitive type을 포함하는 옵셔널을 반환하는 것은, 비용이 매우 큽니다. 따라서 `Boolean`, `Byte`, `Character`, `Short`, `Float` 형을 제외하고는 `boxed primitive type`을 Optional로 반환하면 안됩니다.
+
+앞서 Optional 을 반환하고, 치를 처리하는 방법에 대해 설명했습니다. 이를 다른 가능한 사용에 대해 이야기 하지 않은 이유는, 이를 잘 못 사용하면, 불필요한 복잡성을 만들기 때문입니다. Collection이나 array의 key, value, element 로 Optional을 사용하는 것은 적절하지 않습니다.
+
+이를 정리하면, **항상 값을 반환할 수 없는 메서드를 작성하고 메서드 사용자가 호출 할 때마다, 이 가능성을 고려하는 것을 중요하다고 생각하면 `Optional`을 사용하는 것이 좋습니다.** 그러나, 이 경우 성능에 대한 부분을 고려해야합니다. 성능이 중요한 메서드의 경우에는 null을 반환하거나, throw하는 것이 더 좋을 수 있습니다.
+
 <br/>
 
 ## Item 56. 노출된 모든 API 요소에 대한 문서 주석을 작성합니다.
