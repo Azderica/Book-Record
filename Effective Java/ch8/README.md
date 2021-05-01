@@ -308,6 +308,55 @@ public void foo(int a1, int a2, int a3, int... rest) { }
 
 ## Item 54. Null이 아닌 빈 컬렉션이나 배열을 반환합니다.
 
+```java
+// 빈 컬렉션을 나타 내기 위해 null을 반환합니다. -> 좋지 않습니다.
+private final List<Cheese> cheesesInStock = ...;
+
+public List<Cheese> getCheeses() {
+  return cheesesInStock.isEmpty() ? null
+    : new ArrayList<>(cheesesInStock);
+}
+```
+
+이러한 경우, 클라이언트 측에서는 null을 처리하기 위해서 추가 코드가 필요합니다.
+
+```java
+List<Cheese> cheeses = shop.getCheeses();
+if (cheeses != null && cheeses.contains(Cheese.STILTON))
+  System.out.println("Jolly good, just the thing.");
+```
+
+이러한 처리가 필요없게 하기 위해서는 다음과 같이 작성하는 것이 좋습니다.
+
+```java
+List<Cheese> cheeses = shop.getCheeses();
+if (cheeses != null && cheeses.contains(Cheese.STILTON))
+  System.out.println("Jolly good, just the thing.");
+```
+
+이를 더 최적화하면 아래처럼 표현할 수 있습니다.
+
+```java
+// 최적화-빈 컬렉션 할당 방지
+public List <Cheese> getCheeses () {
+  return cheesesInStock.isEmpty ()? Collections.emptyList ()
+    : new ArrayList <> (cheesesInStock);
+}
+```
+
+배열도 비슷한 방식으로 처리할 수 있으며, 최적화할 수 있습니다.
+
+```java
+// 최적화-빈 배열 할당 방지
+private static final Cheese [] EMPTY_CHEESE_ARRAY = new Cheese [0];
+
+public Cheese [] getCheeses () {
+  return cheesesInStock.toArray (EMPTY_CHEESE_ARRAY);
+}
+```
+
+이를 요약하면, **빈 배열이나 컬렉션 대신에 null을 반환하면 안됩니다.**
+
 <br/>
 
 ## Item 55. Optionals를 신중하게 반환합니다.
