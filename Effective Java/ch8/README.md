@@ -247,6 +247,63 @@ public static String classify(Collection<?> c) {
 
 ## Item 53. Varargs를 신중하게 사용합니다.
 
+`variable arity` 메서드로 알려진 Varargs 메서드는 지정된 유형의 0개 이상의 이상의 인수를 허용합니다. varargs 기능은 먼저 arguments 배열을 만들고, 다음 argument 값을 배열에 넣고, 마지막으로 배열을 메서드에 전달하는 방식으로 작동합니다.
+
+아래는 대표적인 예시입니다.
+
+```java
+// 간단한 varargs 사용
+static int sum(int... args) {
+  int sum = 0;
+  for(int arg : args)
+    sum += arg;
+  return sume;
+}
+```
+
+그러나 때로는 0 개 이상의 인수가 아닌 특정 유형의 하나 이상의 인수 가 필요한 메서드를 작성하는 것이 적절합니다
+
+아래는 잘못된 코드입니다.
+
+```java
+static int min(int... args) {
+  if (args.length == 0)
+    throw new IllegalArgumentException("Too few arguments");
+
+  int min = args[0];
+  for (int i = 1; i < args.length; i++)
+    if (args[i] < min)
+      min = args[i];
+  return min;
+}
+```
+
+위의 문제는 클라이언트가 인수없이 메서드를 호출하면 컴파일 에러가 아닌 런타임 에러가 발생합니다. 이를 해결하기 위해서는 두개의 매개 변수를 사용할 수 있습니다.
+
+```java
+// The right way to use varargs to pass one or more arguments
+static int min(int firstArg, int... remainingArgs) {
+  int min = firstArg;
+  for (int arg : remainingArgs)
+    if (arg < min)  min = arg;
+  return min;
+}
+```
+
+성능이 중요한 상황에서 varargs를 사용할 때는 주의해서 사용해야합니다. varargs 메서드를 호출할 때 마다 배열 할당 및 초기화가 발생합니다. 이러한 경우 성능적인 이슈를 해결하기 위해서는 다음과 같은 패턴을 사용할 수도 있습니다.
+
+```java
+public void foo() { }
+public void foo(int a1) { }
+public void foo(int a1, int a2) { }
+public void foo(int a1, int a2, int a3) { }
+public void foo(int a1, int a2, int a3, int... rest) { }
+```
+
+이는 일반적으로 적절하지않지만, 일부 경우에서 적용될 수 있습니다.
+
+즉, varargs는 가변 개수의 인수로 메서드를 정의해야할 때 매우 유용합니다. varargs 매개 변수 앞에 필수 매개 변수를 추가하고 varargs 의 성능에 대해 유의해야합니다.
+
 <br/>
 
 ## Item 54. Null이 아닌 빈 컬렉션이나 배열을 반환합니다.
