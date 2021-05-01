@@ -326,7 +326,7 @@ if (cheeses != null && cheeses.contains(Cheese.STILTON))
   System.out.println("Jolly good, just the thing.");
 ```
 
-이러한 처리가 필요없게 하기 위해서는 다음과 같이 작성하는 것이 좋습니다.
+이런 처리가 필요없게 하기 위해서는 다음과 같이 작성하는 것이 좋습니다.
 
 ```java
 List<Cheese> cheeses = shop.getCheeses();
@@ -373,7 +373,7 @@ public static <E extends Comparable<E>> E max(Collection<E> c) {
   if (c.isEmpty())
     throw new IllegalArgumentException("Empty collection");
 
-  E result = null;
+  E  9result = null;
   for (E e : c)
     if (result == null || e.compareTo(result) > 0)
       result = Objects.requireNonNull(e);
@@ -382,7 +382,7 @@ public static <E extends Comparable<E>> E max(Collection<E> c) {
 }
 ```
 
-이를 Optional릍 통해서 수정할 수 있습니다.
+이를 `Optional`릍 통해서 수정할 수 있습니다.
 
 ```java
 public static <E extends Comparable<E>> Optional<E> max(Collection<E> c) {
@@ -398,9 +398,7 @@ public static <E extends Comparable<E>> Optional<E> max(Collection<E> c) {
 }
 ```
 
-다만, `Optional-returning` 메서드에서 null 값을 반환하면 안됩니다. 이는 Optional의 목적을 무시하는 것입니다.
-
-`Optional`을 통해서 다른 메서드에서도 사용할 수 있습니다.
+다만, `Optional-returning` 메서드에서 null 값을 반환하면 안됩니다. 이는 `Optional`의 목적을 무시하는 것입니다. 또한 `Optional`을 통해서 다른 메서드에서도 사용할 수 있습니다.
 
 ```java
 // 컬렉션의 최대 값을 Optional <E>로 반환-스트림을 사용
@@ -424,7 +422,7 @@ Toy myToy = max (toys).orElseThrow(TemperTantrumException::new);
 Element lastNobleGas = max(Elements.NOBLE_GASES).get() ;
 ```
 
-위의 이러한 방법들을 통해서 적절한 해결책을 찾지못한 경우에는 Optional의 `isPresent().true`를 사용하는 것도 나쁘지 않습니다. 또한 snippset을 사용하는 것도 좋습니다.
+위의 이러한 방법들을 통해서 적절한 해결책을 찾지 못한 경우에는 `Optional`의 `isPresent().true`를 사용하는 것도 나쁘지 않습니다. 또한 snippset을 사용하는 것도 좋습니다.
 
 ```java
 // snippset 코드
@@ -437,7 +435,7 @@ System.out.println("Parent PID: " +
   ph.parent().map(h -> String.valueOf(h.pid())).orElse("N/A"));
 ```
 
-자바의 Stream을 사용하는 경우, 아래처럼 Optional을 적용할 수 있습니다. (Java9에서는 스트림에 Optional이 추가되었습니다.)
+자바의 Stream을 사용하는 경우, 아래처럼 `Optional`을 적용할 수 있습니다. (Java9에서는 스트림에 `Optional`이 추가되었습니다.)
 
 ```java
 // Java 8
@@ -450,7 +448,7 @@ streamOfOptionals
   .flatMap(Optional::stream)
 ```
 
-그러나 모든 반환 유형에서 적용되는 것은 아닙니다. `Collections`, `Maps`, `Streams`, `Arrays`, `Optionals` 을 포함하는 컨테이너 유형은 옵션으로 래핑해서는 안됩니다. 이 경우에는 Optional<List<T>>를 반환하는 것 보다는 List<T>를 반환하는 것이 좋습니다.
+그러나 모든 반환 유형에서 적용되는 것은 아닙니다. `Collections`, `Maps`, `Streams`, `Arrays`, `Optionals` 을 포함하는 컨테이너 유형은 옵션으로 래핑해서는 안됩니다. 이 경우에는 `Optional<List<T>>`를 반환하는 것 보다는 `List<T>`를 반환하는 것이 좋습니다.
 
 결과를 반환 할 수 없는 경우, `Optional<T>`를 반환하는 메서드를 선언해야하며, 결과가 반환되지 않으면 클라이언트가 특별한 처리를 수행해야합니다.
 
@@ -463,3 +461,89 @@ boxed primitive type을 포함하는 옵셔널을 반환하는 것은, 비용이
 <br/>
 
 ## Item 56. 노출된 모든 API 요소에 대한 문서 주석을 작성합니다.
+
+API를 사용할 수 있으려면 문서화해야합니다. 전통적으로 API 문서는 수동으로 생성되었으며 코드와 동기화를 유지하는 어려운 일입니다.
+
+문서 주석 규칙은 공식적으로 언어의 일부는 아니지만 모든 Java 프로그래머가 알아야하는 사실상의 API를 구성합니다. 대표적인 문서 태그로 Java 9의 `{@index}`, Java 8의 `{@implSpec}`, Java 5의 `{@literal}`, `{@code}` 등이 있습니다.
+
+API를 올바르게 문서화하려면 내보낸 모든 클래스, 인터페이스, 생성자, 메소드 및 필드 선언 앞에 주석을 붙여야합니다. 또한 메서드에 대한 문서 주석은 메서드와 클라이언트 간의 계약을 간결하게 설명해야합니다.
+
+이를 표현한 코드는 다음과 같습니다.
+
+```java
+// ({@code index < 0 || index >= this.size()})
+E get(int index);
+```
+
+```java
+/ * 이 컬렉션이 비어 있으면 true를 반환합니다.
+  * @implSpec
+  * 이 구현은 {@code this.size () == 0}을 반환합니다.
+  * @return true if this collection is empty
+  */
+public boolean isEmpty () {...}
+```
+
+**문서 주석은 소스 코드와 생성된 문서 모두에서 읽을 수 있어야합니다.** 또한, 클래스 또는 인터페이스의 두 멤버 또는 생성자는 동일한 요약 설명을 가져서는 안됩니다.
+
+이를 사용한 예제 코드는 아래와 같습니다.
+
+```java
+/**
+ * A suspect, such as Colonel Mustard or {@literal Mrs. Peacock}.
+ */
+public enum Suspect { ... }
+```
+
+```java
+* This method complies with the {@index IEEE 754} standard.
+```
+
+```java
+/ ** 키를 값에 매핑하는 객체. 맵은 중복 키를 포함 할 수 없습니다
+  * 각 키는 최대 하나의 값에 매핑 할 수 있습니다. (나머지는 생략 됨)
+  * @param <K>이 맵에서 관리하는 키 유형
+  * @param <V> 매핑 된 값 유형
+  * /
+public interface Map<K, V> { ... }
+```
+
+Enum 형을 문서화할 때는 상수와, 유형 및 공용 메서드를 문서화해야합니다.
+
+```java
+ /**
+  * 심포니 오케스트라의 악기 섹션.
+  */
+public enum OrchestraSection {
+  /** 플루트, 클라리넷, 오보에와 같은 목 관악기. */
+  WOODWIND,
+
+  /** 프렌치 호른 및 트럼펫과 같은 금관 악기. */
+  BRASS,
+
+  /** 팀파니 및 심벌즈와 같은 타악기. */
+  PERCUSSION,
+
+  /** 바이올린과 첼로와 같은 현악기. */
+  STRING;
+}
+```
+
+```java
+ /**
+  * 주석이 달린 메서드가 통과하려면 지정된 예외를 throw해야하는 테스트 메서드임을 나타냅니다.
+  */
+@Retention (RetentionPolicy.RUNTIME)
+@Target (ElementType.METHOD)
+public @interface ExceptionTest {
+ /**
+  * 통과하기 위해 주석이 달린 테스트 메서드가 throw해야하는 예외입니다 .
+  * (테스트는 이 클래스 객체가 설명하는 유형의 하위 유형을 던질 수 있습니다.)
+  */
+  Class <? Throwable> value ();를 확장합니다.
+}
+```
+
+또한 API의 두가지 측면은 스레드 안전성고 직렬화 가능성입니다. 또한 **클래스 또는 정적 메서드가 스레드로부터 안전한지 여부에 관계없이, 스레드 안전성을 문서화**해야합니다. 이를 문서화 해야지, 이후에 관리를 하기 편합니다.
+
+이를 요약하면 문서 주석은 API를 문서화하는 가장 효과적인 방법입니다. **내보낸 모든 API 요소에 대한 사용은 필수로 간주해야합니다. 따라서 표준 규칙을 준수하는 일관된 스타일을 채택해야합니다.**
