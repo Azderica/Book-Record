@@ -151,6 +151,98 @@ public Date end () {
 
 ## Item 52. 오버로딩을 신중하게 사용합니다.
 
+아래는 집합, 목록, 또는 다른 종류의 컬렉션인지에 따라 컬렉션을 분류하는 의도로 된 목적으로 된 코드입니다. 그러나 잘못된 코드입니다.
+
+```java
+public class CollectionClassifier {
+  public static String classify(Set<?> s) {
+    return "Set";
+  }
+
+  public static String classify(List<?> lst) {
+    return "List";
+  }
+
+  public static String classify(Collection<?> c) {
+    return "Unknown Collection";
+  }
+
+  public static void main(String[] args) {
+    Collection<?>[] collections = {
+      new HashSet<String>(),
+      new ArrayList<BigInteger>(),
+      new HashMap<String, String>().values()
+    };
+
+    for (Collection<?> c : collections)
+      System.out.println(classify(c));
+  }
+}
+
+/* Output
+ * : Unknown Collection
+ * : Unknown Collection
+ * : Unknown Collection
+ */
+```
+
+다음과 같이 발생하는 원인은, `classify` 메서드가 overload되고 호출할 overload가 컴파일 타임에 선택되기 때문입니다.
+
+오버로드된 메서드 중에서 선택이 static이고, 재정의된 메서드 중에서 선택이 `dynamic`이기 때문에 직관적이지 않습니다. 즉, 오버로딩된 메서드의 올바른 버전은 런타임에 선택되고, 메서드가 호출되는 개체의 런타임 유형을 기반으로 합니다.
+
+즉, 상위 클래스의 메서드 선언과 동일한 시그니처가 있는 메서드 선언이 하위 클래스에 포함되어 있으면 메서드가 재정의 됩니다. 이를 잘표현 코드는 다음과 같습니다.
+
+```java
+class Wine {
+  String name() { return "wine"; }
+}
+
+class SparklingWine extends Wine {
+  @Override String name() { return "sparkling wine"; }
+}
+
+class Champagne extends SparklingWine {
+  @Override String name() { return "champagne"; }
+}
+
+public class Overriding {
+  public static void main(String[] args) {
+    List<Wine> wineList = List.of(
+      new Wine(), new SparklingWine(), new Champagne());
+
+    for (Wine wine : wineList)
+      System.out.println(wine.name());
+  }
+}
+
+/* Output
+ * : wine
+ * : sparkling wine
+ * : champagne
+ */
+```
+
+또 다른 방법으로 아래처럼 `instanceof`를 사용할 수도 있습니다.
+
+```java
+public static String classify(Collection<?> c) {
+  return c instanceof Set ? "Set" :
+    c instanceof List ? "List" : "Unknown Collection";
+}
+```
+
+오버라이딩(overriding)은 표준이고, 오버로딩(overloading)이기 때문에, 오버라이딩(overriding, 재정의)는 메서드 호출의 동작에 대해 사람들의 예상을 설정할 수 있습니다. 그러나 오버로딩(overloading)은 여러 expectations에 혼란을 줄 수 있습니다.
+
+이러한 잘못된 오버로딩의 사용은, 어떠한 것이 호출되는지 모르기 때문에 어려움을 겪을 수 있습니다. 따라서 **혼란스러운 오버로딩 사용을 피해야합니다.**
+
+여러 오버로딩을 잘사용하는 방법은 이야기가 많지만, **안전하고 보수적인 정책은 동일한 수의 매개 변수로 두 개의 오버로딩을 내보내지 않는 것입니다.** 이러한 제한을 통해서 메서드를 오버로드하는 대신 항상 다른 이름을 지정할 수 있습니다.
+
+예를 들면, write 메서드 대신에, writeBoolean, writeInt, writeLong 등이 있으며 이를 통해서 대응하는 메서드를 바로 확인할 수 있다는 점입니다.
+
+오버로딩을 애매하게 사용하는 부분은 Java 5 이전부터 존재했으며, Java 8에서 람다가 나오고 나서 더 헷갈리게 되었습니다. 또한 동일한 인수 위치에서 서로 다른 기능적 인터페이스를 사용하는 메서드 또는 생성자를 오버로딩하면 혼란을 만듭니다. **동일한 인수 위치에서 다른 기능 인터페이스를 사용하기 위해 메서드를 오버로드하면 안됩니다.**
+
+결론적으로는, 메서드를 오버로드할 수 있다고 꼭 할 필요가 없습니다. 일반적으로 동일한 수의 매개 변수를 가진 여러 시그니처가 있는 메서드를 오버로드하지 않는 곳이 좋습니다. 일부 생성자와 관련되어 이가 힘들 수도 있지만, 캐스트를 통해서 동일한 매개 변수가 다른 오버로딩에 전달되는 것은 막아야합니다.
+
 <br/>
 
 ## Item 53. Varargs를 신중하게 사용합니다.
