@@ -476,7 +476,7 @@ E get(int index);
 ```
 
 ```java
-/ * 이 컬렉션이 비어 있으면 true를 반환합니다.
+ /* 이 컬렉션이 비어 있으면 true를 반환합니다.
   * @implSpec
   * 이 구현은 {@code this.size () == 0}을 반환합니다.
   * @return true if this collection is empty
@@ -500,11 +500,11 @@ public enum Suspect { ... }
 ```
 
 ```java
-/ ** 키를 값에 매핑하는 객체. 맵은 중복 키를 포함 할 수 없습니다
+ /** 키를 값에 매핑하는 객체. 맵은 중복 키를 포함 할 수 없습니다
   * 각 키는 최대 하나의 값에 매핑 할 수 있습니다. (나머지는 생략 됨)
   * @param <K>이 맵에서 관리하는 키 유형
   * @param <V> 매핑 된 값 유형
-  * /
+  */
 public interface Map<K, V> { ... }
 ```
 

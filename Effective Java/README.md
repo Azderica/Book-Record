@@ -7,7 +7,7 @@
 - [Enum형과 어노테이션](./ch6/README.md)
 - [람다와 스트림](./ch7/README.md)
 - [메서드](./ch8/README.md)
-- General Programming
+- [제너럴 프로그래밍](./ch9/README.md)
 - Exceptions
 - Concurrency
 - Serialization
