@@ -74,6 +74,70 @@ for (int i = 0, n = expensiveComputation(); i < n; i++) {
 
 ## Item 58. 전통적인 `FOR` 루프 보다는 `FOR-EACH` 루프를 더 선호합니다.
 
+```java
+// 컬렉션을 반복하는 것이 가장 좋은 방법은 아닙니다.
+for (Iterator<Element> i = c.iterator(); i.hasNext(); ) {
+  Element e = i.next();
+  ... // Do something with e
+}
+```
+
+기존의 for loop 문도, while 문 보다는 낫지만 완벽하지 않습니다. 요소만 필요한 경우, 이는 복잡할 뿐입니다.
+
+for-each 루프는 이러한 문제를 해결합니다.
+
+```java
+// 컬렉션 및 배열을 반복하는 데 선호되는 관용구
+for (Element e : elements) {
+  ... // Do something with e
+}
+```
+
+이러한 for-each 문은 중첩된 반복문에서 좀 더 도움이 됩니다. 아래는 for문에서 발생하기 쉬운 버그입니다.
+
+```java
+enum Face {ONE, TWO, THREE, FOUR, FIVE, SIX}
+...
+Collection <Face> faces = EnumSet.allOf (Face.class);
+
+for (Iterator <Face> i = faces.iterator (); i.hasNext ();)
+  for (Iterator <Face> j = faces.iterator (); j.hasNext ();)
+    System.out.println (i. next () + ""+ j.next ());
+
+// Expected Output : {ONE, ONE}, {ONE, TWO}, ..., {SIX, SIX}
+// Real Output : {ONE, ONE}, {TWO, TWO}, ..., {SIX, SIX}
+```
+
+이를 생각하는 값을 나오게 하기 위해서는 아래처럼 구성하면 됩니다.
+
+```java
+// 컬렉션 및 배열에 중첩 된 반복에 대한 기본 관용구
+for (Suit suit : suits)
+  for (Rank rank : ranks)
+    deck.add(new Card(suit, rank));
+```
+
+다만 for-each 문을 사용할 수 없는 경우는 세가지 상황이 있습니다.
+
+- Destructive filtering(파괴적 필터링)
+  - 선택한 요소를 제거하는 컬렉션을 탐색해야하는 경우, `remove` 메서드를 호출할 수 잇도록 명시적 반복자를 사용해야합니다.
+  - Java 8에 추가된 Collection의 removeIf 메서드를 사용하여 명시적 순회를 피할 수 있습니다.
+- Transforming(변형)
+  - 목록 또는 배열을 탐색하고 해당 요소 값의 일부 또는 전체를 교체해야하는 경우, 요소 값을 바꾸기 위해서 list iterator 또는 array index가 필요합니다.
+- Parallel iteration(병렬 반복)
+  - 여러 컬렉션을 병렬로 트래버스해야하는 경우, 모든 반보기 또는 인덱스 변수를 잠금 단계로 진행할 수 있도록 iterator 또는 인덱스 변수를 명시적으로 제어해야합니다.
+
+for-each 루프를 사용하면, 컬렉션과 배열을 반복할 수 있을 뿐만 아니라, 단일 메서드로 구성된 Iterable 인터페이스를 구현하는 모든 개체를 발복할 수 있습니다. 인터페이스의 모습은 다음과 같습니다.
+
+```java
+public interface Iterable <E> {
+  //이 반복 가능한 요소에 대한 iterator를 반환합니다.
+  Iterator <E> iterator ();
+}
+```
+
+이렇게 하면, 사용자가 for-each 루프를 사용해서 type을 iterator할 수 있습니다. 즉, **for-each 루프는 for 성능 저하없이 명확성, 유연성 및 버그 방지 측면에서 기존 루프에 비해 강력한 이점을 제공합니다.** 또한 최대한 for-each 루프를 사용할 수 있습니다.
+
 <br/>
 
 ## Item 59. 라이브러리를 알고 사용해야합니다.
