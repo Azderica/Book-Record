@@ -142,13 +142,129 @@ public interface Iterable <E> {
 
 ## Item 59. 라이브러리를 알고 사용해야합니다.
 
+예를 들어, random 을 사용해야할 때 random을 쓰려면 여러 버그가 발생할 수 있습니다. 이러한 경우, 여러 결점이 존재하기 때문에 이를 해결해야합니다.
+
+대표적인 예시로 자바 7의, ThreadLocalRandom이 있습니다. 이를 사용하면, 높은 품질의 난수를 빠르게 생성할 수 있습니다.
+
+표준 라이브러리 사용은 다음의 장점을 가집니다.
+
+- **표준 라이브러리를 사용하면, 이를 작성한 전문가의 지식과 이전에 사용했던 경험을 활용할 수 있습니다.**
+- 업무와 관련 없는 부분에 시간을 낭비할 필요가 없습니다.
+- 시간이 지남에 따라 성능이 향상되는 경향이 있습니다.
+- 시간이 지남에 따라 얻는 경향이 있습니다. (누락된 기능이 후속 추가될 수 있습니다.)
+
+예를 들어 다음과 같이 보여줄 수 있습니다.
+
+```java
+// Java 9에 추가 된 transferTo를 사용하여 URL의 내용을 인쇄합니다.
+public static void main (String [] args) throws IOException {
+  try (InputStream in = new URL (args [0]). openStream ()) {
+    in. transferTo (System.out);
+  }
+}
+```
+
+이러한 라이브러리는 문서들을 공부하기에는 너무 많습니다. 그러나, 모든 프로그래머들은 `java.lang`, `java.util`, `java.io`와 서브패키지의 기본 사항에 대해 잘 알고 있어야합니다.
+
+이를 요약하면 다음과 같습니다. **라이브러리가 있는 경우 사용해야하고 모르는 경우에는 라이브러리가 있는지 확인해야합니다.** 일반적으로 라이브러리 코드는 사용자가 직접 작성하는 코드보다 좋으며 시간이 지남에 따라 개선 될 가능성이 높습니다.
+
 <br/>
 
 ## Item 60. 정확한 답변이 필요한 경우, `FLOAT`와 `DOUBLE`을 피합니다.
 
+`float`와 `double` 유형은 과학 및 공학 계산을 위해서 설게되었습니다. 그렇기 때문에 정확한 근사치를 신속하게 제공하기 위해서 설계된 구조입니다. 따라서, 정확한 결과에 제공하면 안되며 정확한 결과가 필요한 곳에서는 사용하면 안됩니다. (Ex. 금전 계산 등)
+
+```java
+// Broken - 화폐 계산에 부동 소수점을 사용합니다!
+// 사용하면 안됩니다.
+public static void main(String[] args) {
+  double funds = 1.00;
+  int itemsBought = 0;
+  for (double price = 0.10; funds >= price; price += 0.10) {
+    funds -= price;
+    itemsBought++;
+  }
+
+  System.out.println(itemsBought + " items bought.");
+  System.out.println("Change: $" + funds);
+}
+// output : 0.3999999... (잘못된 값)
+```
+
+따라서, 아래처럼 수정해야합니다.
+
+```java
+public static void main(String[] args) {
+  final BigDecimal TEN_CENTS = new BigDecimal(".10");
+  int itemsBought = 0;
+  BigDecimal funds = new BigDecimal("1.00");
+  for (BigDecimal price = TEN_CENTS;
+        funds.compareTo(price) >= 0;
+        price = price.add(TEN_CENTS)) {
+    funds = funds.subtract(price);
+    itemsBought++;
+  }
+  System.out.println(itemsBought + " items bought.");
+  System.out.println("Money left over: $" + funds);
+}
+```
+
+이 경우, BigDecimal을 사용하게 되면 정확한 결과를 만들 수 있습니다. (다만, 원시적인 값에 비해 조금 더 느려집니다.)
+
 <br/>
 
 ## Item 61. Boxed Primitive 보다 Primitive type을 선호합니다.
+
+자바는 `int`, `double`, `boolean과` 같은 기본(Primitive) 요소와 `String`이나 `List`와 같은 참조(Reference) 유형으로 구성되어 있습니다. 또한 모든 기본 유형(Primitive Type)에는 Boxed Primitive라고 하는 참조 유형이 있습니다. 이것이 바로, `int`, `double`, `boolean`에 해당하는 `Integer`, `Double`, `Boolean` 입니다.
+
+Primitive와 Boxed Primitive 사이에는 세 가지 주요 차이점이 있습니다.
+
+- Primitive는 값만 가지고 있는 반면에, Boxed Primitive는 값과 구별되는 ID를 가지고 있습니다.
+- Primitive는 기본 값만 존재하는 반면에, Boxed Primitive는 null과 같이 비 기능적 값이 있습니다.
+- Primitive는 Boxed Primitive보다 시간과 공간 효율적입니다.
+
+이러한 차이를 참고해서 만들어야 합니다.
+
+즉, 아래의 코드는 잘못된 코드입니다.
+
+```java
+Comparator <Integer> naturalOrder = (i, j)-> (i <j)? -1 : (i == j? 0 : 1);
+
+naturalOrder.compare(new Integer(42), new Integer(42))
+// output : 1 -> error
+```
+
+이와 같은 문제로, boxed primitives에는 `==` 연산자를 적용하는 것은 거의 대부분 잘못된 것입니다. 따라서 비교를 할때는 primitive를 사용하는 것이 더 좋습니다.
+
+```java
+public class Unbelievable {
+  static Integer i;
+
+  public static void main (String [] args) {
+    if (i == 42)
+      System.out.println ( "Unbelievable");
+  }
+}
+```
+
+다만, 위의 코드처럼 사용하는 것도 좋지 않습니다. primitive와 boxed primitive를 혼합해서 사용하는 경우, boxed primitive 타입이 박스 해제가 되는 문제가 있습니다.
+
+```java
+// 매우 느린 코드
+public static void main (String [] args) {
+  Long sum = 0L;
+  for (long i = 0; i <Integer.MAX_VALUE; i ++) {
+    sum + = i;
+  }
+  System.out.println (sum);
+}
+```
+
+위 코드는 지역 변수 sum을 기본(Primitive) 타입이 아닌, Boxed Primitive 타입을 사용했기 때문에 반복적으로 boxing되고 unboxed 되는 문제가 존재합니다.
+
+요약하자면, 선택권이 있는 경우에는 Boxed primitive 보다는 primitive를 사용하는 것이 좋습니다. Boxed Primitive를 사용해야하는 상황이면 조심히 사용해야합니다. **Auto boxing은 boxed primitives를 사용하는 위험은 아니지만, 자세한 정도를 줄입니다.**
+
+프로그램이 boxed 및 unboxed primitive 를 포함하는 혼합 계산을 할때는 unboxing을 수행되고, 프로그램이 unboxing을 수행할 때 `NullPointerException`을 throw할 필요가 있습니다. 프로그램이 Primitive 타입을 Boxed Primitive에 넣으면 비용이 많이 들고 불필요한 개체 생성이 발생할 수 있습니다.
 
 <br/>
 
