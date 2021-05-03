@@ -318,6 +318,35 @@ public final class ThreadLocal<T> {
 
 ## Item 63. 문자열 연결의 성능에 주의합니다.
 
+문자열 연결 연산자, `+`는 몇개의 문자열을 하나로 결합하는 편리하고 좋은 방법입니다. 작은 범위에서는 좋을 수 있지만, 문자열 연결 연산자를 사용해서 n개의 문자열을 연결하는 경우, n 타임이 걸리게 됩니다.
+
+즉, 아래는 잘못된 사용 코드입니다.
+
+```java
+// 부적절한 문자열 연결 사용-성능이 좋지 않습니다!
+public String statement() {
+  String result = "";
+  for (int i = 0; i < numItems(); i++)
+    result += lineForItem(i);  // String concatenation
+  return result;
+}
+```
+
+이를 해결하기 위해서는 `StringBuilder`를 사용하는 것이 좋습니다.
+
+```java
+public String statement () {
+  StringBuilder b = new StringBuilder (numItems () * LINE_WIDTH);
+  for (int i = 0; i <numItems (); i ++)
+    b.append (lineForItem (i));
+  return b.toString ();
+}
+```
+
+자바 6이후로, 문자열 연결 속도를 높였으나 아직까지는 `StringBuilder`를 사용하는 것이 좋습니다.
+
+즉, 성능이 관련이 없는 경우가 아니면, 문자열 연결 연산자(`+`)를 사용해서 몇개의 문자열을 결합하지 않는 것이 중요합니다.
+
 <br/>
 
 ## Item 64. 인터페이스로 객체를 참조합니다.
