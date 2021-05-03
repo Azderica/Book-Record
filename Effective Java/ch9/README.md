@@ -264,11 +264,55 @@ public static void main (String [] args) {
 
 요약하자면, 선택권이 있는 경우에는 Boxed primitive 보다는 primitive를 사용하는 것이 좋습니다. Boxed Primitive를 사용해야하는 상황이면 조심히 사용해야합니다. **Auto boxing은 boxed primitives를 사용하는 위험은 아니지만, 자세한 정도를 줄입니다.**
 
-프로그램이 boxed 및 unboxed primitive 를 포함하는 혼합 계산을 할때는 unboxing을 수행되고, 프로그램이 unboxing을 수행할 때 `NullPointerException`을 throw할 필요가 있습니다. 프로그램이 Primitive 타입을 Boxed Primitive에 넣으면 비용이 많이 들고 불필요한 개체 생성이 발생할 수 있습니다.
+프로그램이 boxed 및 unboxed primitive 를 포함하는 혼합 계산을 할때는 unboxing을 수행되고, 프로그램이 unboxing을 수행할 때는 `NullPointerException`을 throw할 필요가 있습니다. 프로그램이 Primitive 타입을 Boxed Primitive에 넣으면 비용이 많이 들고 불필요한 개체 생성이 발생할 수 있습니다.
 
 <br/>
 
 ## Item 62. 다른 유형이 적합한 문자열은 피합니다.
+
+문자열은 텍스트를 위해 설계되었습니다. 따라서 문자열로 몇가지를 하면 안되는 경우가 있습니다.
+
+### 문자열은 다른 값 타입을 대체하지 못합니다.
+
+- 입력에서 문자열로 받는 경우가 있지만, 숫자인 경우에는 int, float, BigInteger로 변환해야하고 참/거짓의 경우에는 Enum 또는 boolean으로 처리해야합니다.
+
+### 문자열은 Enum 형을 대체하지 못합니다.
+
+- Enum은 문자열보다, Enum형 상수를 사용하는 것이 중요합니다.
+
+### 문자열은 aggregate 타입을 대체하지 못합니다.
+
+- Entity에 여러 구성이 있는 경우, 사용하지 않는 것이 좋습니다.
+
+### 문자열은 capabilities를 대체하지 못합니다.
+
+- 때때로 문자열은 일부 기능에 대한 액세스 권한을 부여하기위해 사용하는데, 스레드 로컬 변수를 사용할 때 문제가 생길 수 있습니다.
+
+```java
+// Broken - 문자열을 기능으로 부적절하게 사용했습니다!
+// 두 클라이언트가 독립적으로 스레드 로컬을 사용하기로 결정하면 의도하지않게 변수를 공유하므로 여러 문제가 발생가능합니다.
+public class ThreadLocal {
+  private ThreadLocal() { } // Noninstantiable
+
+  // 명명 된 변수에 대한 현재 스레드의 값을 설정합니다.
+  public static void set(String key, Object value);
+
+  // 명명 된 변수에 대한 현재 스레드의 값을 반환합니다.
+  public static Object get(String key);
+}
+```
+
+이를 해결하는 코드는 아래와 같습니다.
+
+```java
+public final class ThreadLocal<T> {
+  public ThreadLocal();
+  public void set(T value);
+  public T get();
+}
+```
+
+이를 요약하면, 더 나인 데이터 유형이 존재하거나 쓸 수 있을 때 객체를 문자열로 나타내는 자연스러운 경향을 피해야합니다. 부적절하게 사용되는 문자열은 다른 유형보다 번거롭고 유연성이 떨어지며 느리고, 오류가 발생하기 쉽습니다.
 
 <br/>
 
