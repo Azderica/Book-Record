@@ -487,3 +487,26 @@ JNI(Java Native Interface)를 사용하면, Java Program이 C. C++와 같은 `na
 <br/>
 
 ## Item 68. 일반적으로 허용되는 명명 규칙을 준수합니다.
+
+자바 플랫폼에서는 잘 정립된 naming conventions이 있으며, 대부분은 The Java Language Specification에 포함되어 있습니다.
+
+패키지, 클래스, 인터페이스, 메서드, 필드 및 형식 변수를 포함하는 여러 naming conventions가 있으며, 이를 위반하면 안됩니다. 이러한 규칙을 위반하면 이후에 사용하기 어려울 수 있습니다.
+
+- 패키지 및 모듈은 마침표로 구분된 구성요소와 함께 계층적이며 소문자 알파벳 문자(가끔 숫자)로 구성되어야합니다.
+- 열거 형 및 주석 유형 이름을 포함한 클래스느 및 인터페이스 이름은 하나 이상의 단어로 구성되어야하며, 각 단어의 앞은 대문자로 표시해야합니다.
+- 메서드 및 필드 이름은 클래스나 인터페이스와 동일한 방식으로 naming conventions를 사용하지만, 첫 글자는 소문자로 구성해야합니다.
+- 상수 필드의 경우 하나이상의 대문자와 밑줄 문자로 구성합니다. (EX. `COIN_VALUE`)
+- 약어의 경우는, 좀 더 신중하게 선정해야합니다.
+
+이를 예시로 하면 다음과 같습니다.
+
+| 식별자 유형      | 예                                                 |
+| ---------------- | -------------------------------------------------- |
+| Package, module  | `org.junit.jupiter.api, com.google.common.collect` |
+| Class, Interface | `Stream, FutureTask, LinkedHashMap, HttpClient`    |
+| Method, Field    | `remove, groupingBy, getCrc`                       |
+| Constant Field   | `MIN_VALUE, NEGATIVE_INFINITY`                     |
+| Local Variable   | `i, denom, houseNum`                               |
+| Type Parameter   | `T, E, K, V, X, R, U, V, T1, T2`                   |
+
+위와 같은 standard naming conventions를 내재회 하고, 그 다음 특성을을 사용하는 방법을 인지하는 것이 좋습니다. 일반적으로 grammatical conventions는 더 복잡하고 느슨합니다. `The Java Language Specification`에서 인용한 글은 "오래 유지된 관습적 사용이 달라지는 경우, 이러한 관습을 과도하게 따라하면 안됩니다."라는 글입니다. 즉, 상식에 한해서 개발하는 것이 필요합니다.
