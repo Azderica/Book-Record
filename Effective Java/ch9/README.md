@@ -373,6 +373,76 @@ LinkedHashSet<Son> sonSet = new LinkedHashSet<>();
 
 - [Reflection ?](https://velog.io/@ptm0304/Java-%EC%9E%90%EB%B0%94-%EB%A6%AC%ED%94%8C%EB%A0%89%EC%85%98)
 
+핵심 리플렉션 기능인 `java.lang.reflect`는 임의의 클래스에 대한 프로그래밍 방식 액세스를 제공합니다. Class 객체가 주어지면, Class 인스턴스가 나타내는 생성자, 메서드 및 필드를 나타내는 Constructor, Method, Field 인스턴스를 얻을 수 있습니다.
+
+그러나 리플렉션을 사용하게 되면, 아래의 단점을 가지게 됩니다.
+
+- 예외 검사를 포함하여 컴파일 타임 유형 검사의 모든 이점을 잃게됩니다.
+- 반사 액세스를 수행하는 데 필요한 코든느 서투르고 장황합니다.
+- 성능이 저하됩니다.
+
+일반적으로는 리플렉션을 사용하는 것은 거의 안좋습니다.
+
+리플렉션은 매우 제한된 형태로만 사용함으로써 비용을 거의 발생시키지 않으면서 리플렉션의 많은 이점을 얻을 수 있습니다. 컴파일 타임에 사용할 수 없는 클래스를 사용해야하는 많은 프로그램의 경우, 컴파일 타임에 클래스를 참조할 적절한 인터페이스 또는 수퍼 클래스가 있습니다. 이 경우, Reflective 인스턴스로 생성하고 해당 interface나 super 클래스를 통해서 정상적으로 액세스 가능합니다.
+
+```java
+// 인터페이스 액세스를 통한 Reflective instantiation
+public static void main(String[] args) {
+  // 클래스 이름을 클래스 객체로 변환
+  Class<? extends Set<String>> cl = null;
+  try {
+    cl = (Class<? extends Set<String>>)  // Unchecked cast!
+      Class.forName(args[0]);
+  } catch (ClassNotFoundException e) {
+    fatalError("Class not found.");
+  }
+
+  // Get the constructor
+  Constructor<? extends Set<String>> cons = null;
+  try {
+    cons = cl.getDeclaredConstructor();
+  } catch (NoSuchMethodException e) {
+    fatalError("No parameterless constructor");
+  }
+
+  // Instantiate the set
+  Set<String> s = null;
+  try {
+    s = cons.newInstance();
+  } catch (IllegalAccessException e) {
+    fatalError("Constructor not accessible");
+  } catch (InstantiationException e) {
+    fatalError("Class not instantiable.");
+  } catch (InvocationTargetException e) {
+    fatalError("Constructor threw " + e.getCause());
+  } catch (ClassCastException e) {
+    fatalError("Class doesn't implement Set");
+  }
+
+  // Exercise the set
+  s.addAll(Arrays.asList(args).subList(1, args.length));
+  System.out.println(s);
+}
+
+private static void fatalError(String msg) {
+  System.err.println(msg);
+  System.exit(1);
+}
+```
+
+위의 코드처럼 피를레션은 강력함을 가지고 있습니다. `<? extends Set<String>>`을 통해서, `service provider framework`등을 구현하는데 도움이 됩니다.
+
+그러나, reflection의 단점 또한 잘보입니다.
+
+- 런타임에 여러 에러가 발생할 수 있는 가능성이 있습니다.
+- 클래스에서 인스턴스를 생성하기 위해서는 긴 코드가 필요합니다.
+
+또한 위 프로그램을 컴파일하면 확인되지 않은 캐스트 경고가 발생합니다.
+
+드물지만, 합법적인 리플렉션 사용법 중 하나는 런타임에 없을 수 있는 다른 클래스, 메서드, 필드에 대한 클래스의 종속성을 관리하는 것입니다.
+
+이를 정리하자면, **리플렉션은 정교한 특정 시스템 프로그래밍 작업에는 필요한 기능이지만 많은 단점이 있습니다.** 컴파일 타입에 알려지지 않은 클래스로 작업해야하는 프로그램을 작성하는 경우, 가능하면 리플렉션을 사용해서 개체를 인스턴스화하고 컴파일 타임에 알려진 일부 인터페이서 또는 슈퍼클래스를 사용해서 개체에 액세스 하는 것이 중요합니다.
+
 <br/>
 
 ## Item 66. 네이티브 메서드를 신중하게 사용합니다.
