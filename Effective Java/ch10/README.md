@@ -63,7 +63,29 @@ try {
 
 <br/>
 
-## Item 72. 표준 예외 사용을 선호합니다.
+## Item 72. 표준 예외를 사용합니다.
+
+예외도 재사용하는 것이 좋습니다. 예외 클래스의 수가 적을수록 메모리의 사용량이 줄며, 클래스 적재 시간도 적게 걸리며 사용자 입장에서도 읽기 쉽고 익숙합니다.
+
+주로 사용하는 예외목록은 다음과 같습니다.
+
+- `IllegalArgumentException`
+  - 허용하지 않는 값이 인수로 건네진 경우
+  - null의 경우는 `NullPointerException`이 처리
+- `IllegalStateException`
+  - 객체가 메서드를 수행하기에 적절하지 않은 상태인 경우
+- `NullPointerException`
+  - null을 허용하지 않는 메서드에 null을 건낸 경우
+- `IndexOutOfBoundsException`
+  - 인덱스가 범위를 넘은 경우
+- `ConcurrentModificationException`
+  - 허용하지 않는 동시 수정이 발생된 경우
+- `UnsupportedOperationException`
+  - 호출된 메서드를 지원하지 않는 경우
+
+이 외에도 더 필요한 경우에는 표준 예외를 확장하는 것이 좋습니다. 하지만, 예외는 직렬화할 수 있으며 이 경우네는 다만 부담이 크므로 사용하지 않는 것이 좋습니다.
+
+다만, 자바 라이브러리에서는 대부분의 API에서 사용하기 충분한 예외를 제공합니다.
 
 <br/>
 
