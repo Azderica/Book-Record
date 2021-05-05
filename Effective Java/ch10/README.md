@@ -59,7 +59,35 @@ try {
 
 ## Item 71. `checked exceptions`의 불필요한 사용을 피합니다.
 
-많은 Java 프로그래머는 `checked exceptions`를 싫어하지만, 제대로 사용하게 되면 API와 프로그램을 향상시킬 수 있습니다. 반환 코드 및 확인되지 않은 예외와는 달리 프로그래머가 문제를 처리하도록하여 안정성을 향상시킵니다.
+많은 Java 프로그래머는 `checked exceptions`를 싫어하지만, 제대로 사용하게 되면 API와 프로그램을 향상시킬 수 있습니다. 하지만 이를 과하게 사용하거나 잘못 사용하면 불편한 API가 될 수 있습니다.
+
+메서드가 `checked exceptions`를 던질 수 있는 경우에는, 이를 호출하는 곳에서 예외를 확인하고 `throw`해야합니다. 다만, `stream`에서는 사용할 수 없습니다.
+
+일반적으로 `checked exceptions`와 `unchecked exceptions` 중 어떤 것을 선택해야할 지 고민되는 경우가 있는데, 이에 대해 조치를 할 수 있는 부분이라면 `checked exceptions`를 사용하고 그렇지 않으면 대부분은 `unchecked exceptions`를 사용하는 것이 중요합니다.
+
+### checked exceptions를 피하는 방법
+
+대표적인 예시로, 예외 대신 빈 Optional을 사용하는 방법이 있습니다. (다만, 부가 정보를 담을 수 없습니다.)
+
+```java
+// 변경 전
+try {
+  obj.action(args);
+} catch (TheCheckedException e) {
+  // 예외 핸들링
+}
+```
+
+```java
+// 변경 후
+if (obj.actionPermitted(args)) {
+  obj.action(args);
+} else {
+  // 예외 핸들링
+}
+```
+
+다만 위 코드의 경우 예외에 대해 유연하게 처리할 수는 있지만, 객체 상태가 변할 수 있기 때문에 thread safe하지는 않습니다.
 
 <br/>
 
