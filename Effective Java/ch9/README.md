@@ -432,7 +432,7 @@ private static void fatalError(String msg) {
 
 위의 코드처럼 피를레션은 강력함을 가지고 있습니다. `<? extends Set<String>>`을 통해서, `service provider framework`등을 구현하는데 도움이 됩니다.
 
-그러나, reflection의 단점 또한 잘보입니다.
+그러나, reflection의 단점 또한 잘 보입니다.
 
 - 런타임에 여러 에러가 발생할 수 있는 가능성이 있습니다.
 - 클래스에서 인스턴스를 생성하기 위해서는 긴 코드가 필요합니다.
