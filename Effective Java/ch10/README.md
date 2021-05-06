@@ -83,7 +83,7 @@ try {
 if (obj.actionPermitted(args)) {
   obj.action(args);
 } else {
-  // 예외 핸들링
+  // 예외 조건 처리
 }
 ```
 
@@ -93,7 +93,9 @@ if (obj.actionPermitted(args)) {
 
 ## Item 72. 표준 예외를 사용합니다.
 
-예외도 재사용하는 것이 좋습니다. 예외 클래스의 수가 적을수록 메모리의 사용량이 줄며, 클래스 적재 시간도 적게 걸리며 사용자 입장에서도 읽기 쉽고 익숙합니다.
+자바 라이브러리에서는 대부분의 API의 예외 발생 요구 사항을 대부분 처리하는데 도움이 되는 예외를 제공합니다. 따라서 예외도 재사용하는 것이 좋습니다. 예외 클래스의 수가 적을수록 메모리의 사용량이 줄며, 클래스 적재 시간도 적게 걸리며 사용자 입장에서도 읽기 쉽고 익숙합니다.
+
+하지만, `Exception`, `RuntimeException`, `Throwable`를 재사용하거나 `Error`를 직접적으로 사용하는 경우는 매우 좋지 않습니다.
 
 주로 사용하는 예외목록은 다음과 같습니다.
 
@@ -113,8 +115,6 @@ if (obj.actionPermitted(args)) {
 
 이 외에도 더 필요한 경우에는 표준 예외를 확장하는 것이 좋습니다. 하지만, 예외는 직렬화할 수 있으며 이 경우네는 다만 부담이 크므로 사용하지 않는 것이 좋습니다.
 
-다만, 자바 라이브러리에서는 대부분의 API에서 사용하기 충분한 예외를 제공합니다.
-
 <br/>
 
 ## Item 73. 추상화에 수준에 맞는 예외를 던집니다.
@@ -130,13 +130,106 @@ try {
 }
 ```
 
-다만, 무턱대고 예외를 전파하는 것보다 `exception translation`가 더 좋지만, 남용하는 것은 좋지않습니다. 가능하다면, 저수준 메서드가 반드시 성공해야합니다. 따라서 저수준에서 오류가 발생하지 않도록 상위에서 매개변수 값을 미리 검사하는 것도 방법입니다. 이를 통해서 사용자에게는 문제를 전파하지 않으면서도 개발자가 로그 분석이 가능합니다.
+다만, 무턱대고 예외를 전파하는 것보다는 `exception translation`가 더 좋지만, 이를 남용하는 것은 좋지않습니다. 가능하다면, 저수준 메서드가 반드시 성공해야합니다. 따라서 저수준에서 오류가 발생하지 않도록 상위에서 매개변수 값을 미리 검사하는 것도 방법입니다. 이를 통해서 사용자에게는 문제를 전파하지 않으면서도 개발자가 로그 분석이 가능합니다.
 
 <br/>
 
 ## Item 74. 각 메소드가 던진 모든 예외를 문서화합니다.
 
 메서드가 던지는 예외는 그 메서드를 올바르게 사용하게 하는 중요한 정보입니다. 따라서 문서화하는데 충분한 시간을 써야합니다.
+
+개발자가 볼 수 있는 오류인 오류(Error)와 예외(Exception)에 대해 구분이 필요합니다. 오류의 경우는 시스템 적으로 정상적이지 않는 상황을 의미하며, 이는 low level에서 발생하기 때문에 개발자가 미리 처리하기 어렵습니다.
+
+반면에 예외(Exception)의 경우는 개발자가 구현한 로직의 코드에서 발생합니다. 그렇기 때문에 이를 예방하고 대응할 수 있습니다. 따라서 이를 구분하고 이에따른 처리방법을 정리해놓는 것이 중요합니다.
+
+### 문서화를 하는 방법
+
+`checked exception`의 경우는 항상 따로 하나씩 선언하고, 각 예외가 발생하는 상황을 `@throws` 태그를 통해서 정확하게 문서화해야합니다.
+
+```java
+/*
+ * ...
+ *
+ * @param fileName
+ * @throws IOException
+ */
+public void someMethod(String fileName) {
+  try(Buffered br = new BufferedReader(new FileReader(filename))){
+  } catch (IOException){
+    // exception handling
+  }
+}
+```
+
+다만, `checked exception`의 경우에 공통적인 상위 클래스로 하나를 선언하는 것은 좋지 않습니다. 즉, `Exception`이라고 던지게 되면, 코드를 사용하는 입장에서 대처해야하는 예외에 대한 힌트를 제공하지 않는 것과 동일합니다. 다만, `main` 메서드에서는 괜찮습니다.
+
+`unchecked exception`의 경우도 문서화를 진행하면 좋습니다. 일반적으로 프로그래밍 오류를 뜻하는데 발생할 수 있는 오류를 명시하면 자엽스럽게 해당 오류가 발생하지 않도록 개발할 수 있습니다.
+
+```java
+/**
+ * ...
+ * @param divisor
+ * @throws ArithmeticException
+ *     Exception may occur when divisor is zero
+ */
+public int someMethod(int divisor) {
+  try {
+    // 피제수(dividend)
+    int dividend = 2_147_483_647;
+
+    // 몫(quotient)
+    int quotient = dividend / divisor;
+    return quotient;
+  } catch (ArithmeticException e) {
+    // divisor(제수)가 0인 경우
+  }
+}
+```
+
+그러나 `unchecked exceptions`는 메서드의 `throw` 선언에는 넣지 않는 것이 좋습니다. 즉 아래처럼 하는 것이 좋습니다. (시각적으로 구분할 수 있습니다.)
+
+```java
+/**
+ * ...
+ * @param divisor
+ * @throws ArithmeticException
+ *     Exception may occur when divisor is zero
+ */
+public int someMethod(int divisor) throws ArithmeticException {
+  // throws 선언에는 제외하는 것을 권장한다.
+}
+```
+
+특정 클래스에 대부분의 메서드가 같은 이유로 모두 동일한 예외를 던지면 이를 클래스에 추가될 수도 있습니다.
+
+```java
+/**
+ * ...
+ * @throws NullPointerException
+ *     All methods throw an exception if the argument is null.
+ */
+public class TestClass {
+  /**
+   * @param paramObj
+   */
+  public void someMethod1(Object paramObj) {
+    if(paramObj == null) {
+      throw new NullPointerException();
+    }
+    // ...
+  }
+
+  /**
+   * @param paramObj
+   */
+  public void someMethod2(Object paramObj) {
+    if(paramObj == null) {
+      throw new NullPointerException();
+    }
+    // ...
+  }
+}
+```
 
 <br/>
 
