@@ -144,7 +144,7 @@ try {
 
 ### 문서화를 하는 방법
 
-`checked exception`의 경우는 항상 따로 하나씩 선언하고, 각 예외가 발생하는 상황을 `@throws` 태그를 통해서 정확하게 문서화해야합니다.
+`checked exception`의 경우는 항상 따로 하나씩 선언하고, 각 예외가 발생하는 상황을 `@throws` 태그를 통해서 정확하게 문서화해야합니다. 또한 확인되지 않은 예외에 대해서는 키워드를 사용하지 않는 것이 중요합니다.
 
 ```java
 /*
@@ -231,6 +231,8 @@ public class TestClass {
 }
 ```
 
+[추가 출처](https://madplay.github.io/post/document-all-exceptions-thrown-by-each-method)
+
 <br/>
 
 ## Item 75. 예외 세부 메시지에 실패 관련 정보를 담습니다.
@@ -245,15 +247,38 @@ public String toString() {
 }
 ```
 
-실패 순간을 적절하게 포착할려면 발생한 예외에 관련된 모든 매개변수와 필드의 값을 실패 메세지에 담아야합니다. 예를 들어 IndexOutOfBoundsException 이라면 범위의 최솟값, 최댓값 그리고 범위를 벗어난 인덱스의 값을 담아야합니다.
+실패 순간을 적절하게 포착할려면 **발생한 예외에 관련된 모든 매개변수와 필드의 값을 실패 메세지에 담아야합니다.** 예를 들어 IndexOutOfBoundsException 이라면 범위의 최솟값, 최댓값 그리고 범위를 벗어난 인덱스의 값을 담아야합니다.
 
-하지만 주의할 점도 있습니다. 관련된 데이터를 모두 담아야하지만 실패 원인을 분석할 때 도움이 되는 정보만을 담아야합니다. 또한 보안과 관련된 정보는 포함하면 안됩니다. 상세 메세지에 비밀번호나 암호화 키 같은 정보는 필요없습니다.
+하지만 주의할 점도 있습니다. 관련된 데이터를 모두 담아야하지만 **실패 원인을 분석할 때 도움이 되는 정보만을 담아야합니다.** 또한 보안과 관련된 정보는 포함하면 안됩니다. 상세 메세지에 비밀번호나 암호화 키 같은 정보는 필요없습니다.
+
+아래 코드는 그 예시를 보여주는 코드입니다.
+
+```java
+/**
+ * Constructs an IndexOutOfBoundsException.
+ *
+ * @param lowerBound the lowest legal index value
+ * @param upperBound the highest legal index value plus one
+ * @param index      the actual index value
+ */
+public IndexOutOfBoundsException(int lowerBound, int upperBound, int index) {
+  // Generate a detail message that captures the failure
+  super(String.format(
+    "Lower bound: %d, Upper bound: %d, Index: %d",
+    lowerBound, upperBound, index));
+
+  // Save failure information for programmatic access
+  this.lowerBound = lowerBound;
+  this.upperBound = upperBound;
+  this.index = index;
+}
+```
 
 <br/>
 
 ## Item 76. 가능한 한 `failure atomicity`으로 만듭니다.
 
-`failure atomicity`란, 호출한 메서드가 실패해도 호출 전 상태를 유지하는 것을 의미합니다. 또한 이를 지키는 것이 중요합니다.
+`failure atomicity`란, **호출한 메서드가 실패해도 호출 전 상태를 유지하는 것을 의미**합니다. 또한 이를 지키는 것이 중요합니다.
 
 ### `failure atomicity`
 
@@ -305,9 +330,9 @@ default void sort(Comparator<? super E> c) {
 
 주로 디스크 기반의 내구성(durability)를 보장해야하는 자료구조에 쓰이는데 자주 사용되는 방법은 아닙니다.
 
-### `failure atomicity`을 지켜야할까?
+### `failure atomicity`을 항상 지킬 수 있나요...
 
-예를 들어 `ConcurrentModificationException`을 잡아내도 그 객체를 여전히 사용할 수 잇는 상태라고 가정하면 안됩니다. 따라서 권장되는 부분이지만, 항상 `failure atomicity`를 지킬 수 없습니다.
+예를 들어 `ConcurrentModificationException`을 잡아내도 그 객체를 여전히 사용할 수 있는 상태라고 가정하면 안됩니다. 이런 경우의 오류는 복구할 수 없기 때문에 이를 보존할려고 시도할 필요가 없습니다. 따라서 권장되는 부분이지만, 항상 `failure atomicity`를 지킬 수 없습니다.
 
 `failure atomicity`으로 만들 수 있도록, 항상 그래야하는 것도 아닙니다. 이를 달성하기 위한 비용이 크거나 복잡도가 아주 큰 연산이 있을 수 있기 때문입니다. 이 규칙을 지키지 못하면 실패시의 객체 상태를 API 설명에 명시해야합니다.
 
@@ -329,13 +354,3 @@ try {
 물론 예외를 무시해야하는 경우가 있습니다. 예를 들어 `FileInputStream`을 닫을 때 그렇습니다. 파일의 상태를 변경하지 않으니 복구할 것이 없고 스트림을 닫는 경우는 필요한 내용을 모두 다 읽어야한다는 뜻입니다.
 
 그래도 예외를 무시하기로 했다면 `catch`블록 안에서 그렇게 결정한 이유를 주석으로 남기고 예외의 이름도 변경해야합니다.
-
-```java
-try {
-  ...
-} catch (SomeException ignored) {
-  // 변수 이름을 ignored 등으로 바꾸고,
-  // 예외를 무시하며 관련 로그를 남겨줍니다.
-}
-
-```
