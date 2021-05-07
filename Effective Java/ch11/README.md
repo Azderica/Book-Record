@@ -120,15 +120,85 @@ public static long generateSerialNumber() {
 
 ### 결론적으로.
 
-가변 데이터를 공유하지 않는 것이 동기화 문제를 피하는 가장 좋은 방법입니다. 즉, **가변 데이터는 단일 스레드에서만 사용하는 것이 좋습니다.** 한 스레드가 데이터를 수정한 후에 다른 스레드에 공유할 때는 해당 객체에 공유하는 부분만 동기화해도 됩니다. 다른 스레드에 이런 객체를 건네는 행위를 `안전 발행(safe publication)`이라고 합니다. 클래스 초기화 과정에서 객체를 정적 필드, volatile 필드, final 필드 혹은 보통의 락을 통해 접근하는 필드 그리고 동시성 컬렉션에 저장하면 안전하게 발생할 수 있습니다.
+가변 데이터를 공유하지 않는 것이 동기화 문제를 피하는 가장 좋은 방법입니다. 즉, **가변 데이터는 단일 스레드에서만 사용하는 것이 좋습니다.** 그리고 이에 대한 문서화를 하는 것이 중요합니다.
 
-또한 여러 스레드가 변경 가능한 데이터를 공유할 때, 데이터를 읽거나쓰는 각 스레드는 동기화를 수행해야합니다.
+한 스레드가 데이터를 수정한 후에 다른 스레드에 공유할 때는 해당 객체에 공유하는 부분만 동기화해도 됩니다. 다른 스레드에 이런 객체를 건네는 행위를 `안전 발행(safe publication)`이라고 합니다. 클래스 초기화 과정에서 객체를 정적 필드, volatile 필드, final 필드 혹은 보통의 락을 통해 접근하는 필드 그리고 동시성 컬렉션에 저장하면 안전하게 발생할 수 있습니다.
+
+여러 스레드가 변경 가능한 데이터를 공유할 때 데이터를 읽거나 쓰는 각 스레드는 동기화를 수행하는 것이 중요합니다.
 
 <br/>
 
 ## Item 79. 과도한 동기화는 피합니다.
 
-동기화를 하지 않으면 문제가 발생합니다. 하지만 과도한 동기화도 적지 않은 문제가 발생합니다. 성능을 털리뜨리고, 교착 상태에 빠뜨리고 심지어는 예측할 수 없는 결과를 만들기도 합니다.
+동기화를 하지 않으면 문제가 발생합니다. 하지만 과도한 동기화는 성능 저하, 데드락, 비결정적 동작을 유발할 수 있습니다.
+
+### 외계인 메서드 (alien method)
+
+이러한 응답 불가 및 안전 문제를 줄이기 위해서는, 동기화된 메서드 또는 블록 내에서 클라이언트에게 제어권을 넘기면 안됩니다. 즉, 동기화된 영액 내에서 재정의되도록 설계된 메서드 또는 클라이언트가 함수 개체의 형태로 제공하는 메서드를 호출하면 안됩니다. 이러한 **메서드는 무슨 일을 할지 모르기 때문에 예외를 발생시키거나, 교착상태를 만들거나 데이터를 훼손 할 수 있으며 이러한 메서드를 외계인 메서드(`alien method`)라고 합니다.**
+
+```java
+// Broken - 동기화 된 블록에서 외계인 메서드를 호출한 경우.
+public class ObservableSet<E> extends ForwardingSet<E> {
+  public ObservableSet(Set<E> set) { super(set); }
+
+  private final List<SetObserver<E>> observers = new ArrayList<>();
+
+  public void addObserver(SetObserver<E> observer) {
+    synchronized(observers) {
+      observers.add(observer);
+    }
+  }
+
+  public boolean removeObserver(SetObserver<E> observer) {
+    synchronized(observers) {
+      return observers.remove(observer);
+    }
+  }
+
+  private void notifyElementAdded(E element) {
+    synchronized(observers) {
+      for (SetObserver<E> observer : observers)
+        observer.added(this, element);
+    }
+  }
+
+  @Override public boolean add(E element) {
+    boolean added = super.add(element);
+    if (added)
+      notifyElementAdded(element);
+    return added;
+  }
+
+  @Override public boolean addAll(Collection<? extends E> c) {
+    boolean result = false;
+    for (E element : c)
+      result |= add(element);  // Calls notifyElementAdded
+    return result;
+  }
+}
+```
+
+```java
+@FunctionalInterface
+public interface SetObserver <E> {
+  // 관찰 가능한 집합에 요소가 추가 될 때 호출됩니다.
+  void added (ObservableSet <E> set, E element);
+}
+```
+
+위 코드는 집합에 원소가 추가되면 알림을 받는 관찰자 패턴을 사용한 예제 코드입니다. 해당 코드는 `addObserver` 메서드를 호출해서 알림을 구도하고, `removeObserver` 메서드를 호출해서 구독을 취소합니다.
+
+이를 통한 잘못된 코드는 아래와 같습니다.
+
+```java
+set.addObserver (new SetObserver <> () {
+  public void added (ObservableSet <Integer> s, Integer e) {
+    System.out.println(e);
+      if (e == 23)
+        s.removeObserver (this);
+  }
+});
+```
 
 <br/>
 
