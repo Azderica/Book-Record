@@ -8,8 +8,8 @@
 - [람다와 스트림](./ch7/README.md)
 - [메서드](./ch8/README.md)
 - [제너럴 프로그래밍](./ch9/README.md)
-- [Exceptions](./ch10/README.md)
-- Concurrency
+- [예외](./ch10/README.md)
+- [동시성](./ch11/README.md)
 - Serialization
 
 향후 참고 git repository
