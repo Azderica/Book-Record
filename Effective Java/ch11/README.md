@@ -134,7 +134,7 @@ public static long generateSerialNumber() {
 
 ### 외계인 메서드 (alien method)
 
-이러한 응답 불가 및 안전 문제를 줄이기 위해서는, 동기화된 메서드 또는 블록 내에서 클라이언트에게 제어권을 넘기면 안됩니다. 즉, 동기화된 영액 내에서 재정의되도록 설계된 메서드 또는 클라이언트가 함수 개체의 형태로 제공하는 메서드를 호출하면 안됩니다. 이러한 **메서드는 무슨 일을 할지 모르기 때문에 예외를 발생시키거나, 교착상태를 만들거나 데이터를 훼손 할 수 있으며 이러한 메서드를 외계인 메서드(`alien method`)라고 합니다.**
+이러한 응답 불가 및 안전 문제를 줄이기 위해서는, **동기화된 메서드 또는 블록 내에서 클라이언트에게 제어권을 넘기면 안됩니다.** 즉, 동기화된 영액 내에서 재정의되도록 설계된 메서드 또는 클라이언트가 함수 개체의 형태로 제공하는 메서드를 호출하면 안됩니다. 이러한 **메서드는 무슨 일을 할지 모르기 때문에 예외를 발생시키거나, 교착상태를 만들거나 데이터를 훼손 할 수 있으며 이러한 메서드를 외계인 메서드(`alien method`)라고 합니다.**
 
 ```java
 // Broken - 동기화 된 블록에서 외계인 메서드를 호출한 경우.
@@ -162,14 +162,16 @@ public class ObservableSet<E> extends ForwardingSet<E> {
     }
   }
 
-  @Override public boolean add(E element) {
+  @Override
+  public boolean add(E element) {
     boolean added = super.add(element);
     if (added)
       notifyElementAdded(element);
     return added;
   }
 
-  @Override public boolean addAll(Collection<? extends E> c) {
+  @Override
+  public boolean addAll(Collection<? extends E> c) {
     boolean result = false;
     for (E element : c)
       result |= add(element);  // Calls notifyElementAdded
@@ -186,7 +188,7 @@ public interface SetObserver <E> {
 }
 ```
 
-위 코드는 집합에 원소가 추가되면 알림을 받는 관찰자 패턴을 사용한 예제 코드입니다. 해당 코드는 `addObserver` 메서드를 호출해서 알림을 구도하고, `removeObserver` 메서드를 호출해서 구독을 취소합니다.
+위 코드는 집합에 원소가 추가되면 알림을 받는 관찰자 패턴을 사용한 예제 코드입니다. 해당 코드는 `addObserver` 메서드를 호출해서 알림을 구독하고, `removeObserver` 메서드를 호출해서 구독을 취소합니다.
 
 이를 통한 잘못된 코드는 아래와 같습니다.
 
@@ -199,6 +201,84 @@ set.addObserver (new SetObserver <> () {
   }
 });
 ```
+
+위 코드는 `ConcurrentModificationException`가 발생합니다. 해당 경우, 0부터 23까지 출력한 후 자신을 remove하고 종료할 것 같으나, 실제로 실행해보면 0~23까지 출력 후 예외가 발생합니다. 이유는 added 메서드 호출이 일어난 시점이 `notifyElementAdded`가 `Observer`들의 리스트를 순회하는 도중이기 때문입니다.
+
+added 메서드에서 `ObservableSet.removeObserver` 메서드를 호출하고, 또 여기서 observers.remove 메서드를 호출하는데 여기서 문제가 발생합니다. 즉, 순회하고 있는 리스트에서 원소를 제거하려고하기 때문에 `notifyElementAdded` 메서드에서 수행하는 순회는 동기화 블록 안에 있어 동시 수정이 일어나지는 않지만, 자신이 콜백을 거쳐 되돌아와 수정하는 것은 막을 수 없습니다.
+
+또 다른 예시로 쓸데없는 백그라운드 스레드를 사용한 케이스를 볼 수 있습니다.
+
+```java
+// 백그라운드 스레드를 불필요하게 사용하는 옵저버
+set.addObserver (new SetObserver <> () {
+  public void added (ObservableSet <Integer> s, Integer e) {
+    System.out.println (e);
+    if (e == 23) {
+      ExecutorService exec = Executors.newSingleThreadExecutor ();
+      try {
+        exec.submit (()-> s.removeObserver (this)). get ();
+      } catch (ExecutionException | InterruptedException ex) {
+        throw new AssertionError (ex);
+      } finally {
+        exec.shutdown ();
+      }
+    }
+  }
+});
+```
+
+해당 코드는 예외는 발생하지 않지만, deadlock에 빠집니다. 백그라운드 스레드가 `s.removeObserver` 메서드를 호출하면, 메인 스레드가 이미 락을 가지고 있기 때문에 `Observer`을 잠그려 시도하지만 락을 얻을 수 없습니다.
+
+이러한 외계인 메서드 예제를 정의한 코드를 보면 `removerObserver` 메서드에는 `synchronized` 키워드가 있기 때문에 실행 시 락이 걸립니다. 동시에 메인 스레드는 백그라운드 스레드가 `Observer`를 제거하기만 기다리기 때문에 deadlock에 빠집니다.
+
+이를 해결하는 방법은 다음과 같습니다.
+
+- 외계인 메서드 호출을 동기화 블럭 바깥으로 옮깁니다.
+
+```java
+private void notifyElementAdded(E element) {
+  List<SetObserver<E>> snapshot = null;
+  synchronized(observers) {
+    snapshot = new ArrayList<>(observers);
+  }
+  for (SetObserver<E> observer : snapshot)
+    observer.added(this, element);
+}
+```
+
+- 더 나은 방법으로는 자바의 `concurrent collection`을 사용하는 방법도 있습니다.
+
+```java
+private final List<SetObserver<E>> observers = new CopyOnWriteArrayList<>();
+
+public void addObserver(SetObserver<E> observer) {
+  observers.add(observer);
+}
+
+public boolean removeObserver(SetObserver<E> observer) {
+  return observers.remove(observer);
+}
+
+private void notifyElementAdded(E element) {
+  for (SetObserver<E> observer : observers)
+    observer.added(this, element);
+}
+```
+
+위와 같은 `CopyOnWriteArrayList`는 ArrayList를 구현한 클래스로 내부를 변경하는 작업은 항상 깨끗한 복사본을 만들어서 수행하도록 구현되어 있습니다. 내부의 배열은 수정되지 않아, 순회할 때 락이 필요없이 매우 빠릅니다. 다른 용도로 사용되는 경우에는 복사를 매번 해야하기에는 느리지만 수정할 일이 적고 순회만 자주 일어나는 경우, Observer 리스트 용도로는 최적입니다.
+
+이처럼 과도한 동기화는 병렬로 실행할 기회를 읽고, 모든 코어가 메모리를 일관되게 보기 위한 지연시간이 지연 비용입니다. 또한 JVM으 코드 최적화를 제한하는 것도 고려해야합니다.
+
+즉, 가변 클래스를 작성할 때는 두가지 선택을 할 수 있습니다.
+
+- 동기화를 하지 않고 그 클래스를 사용해야하는 클래스가 외부에서 동기화 하는 것
+  - `java.util` 패키지 (vector와 hashtable 제외)
+- 동기화를 내부에서 수행해 `thread-safe`한 클래스를 만드는 것
+  - `java.concurrent`패키지
+
+결론적으로 **동기화 영역에서는 작업을 최소한으로 줄이는 것이 중요**합니다. 오래 걸리는 작업이라면 동기화 영역 밖으로 옮기는 방법을 찾아보는 것이 중요합니다. 여러 스레드가 호출할 가능성이 있는 메서드가 정적 필드를 수정한다면 그 필드를 사용하기 전에 반드시 동기화해야합니다.
+
+가변 클래스를 설계할 때는 스스로 동기화해야할지를 고민해야합니다. 과도한 동기화를 피하는 것이 중요하며 합당한 이유가 있는 경우에만 내부에서 동기화하고 동기화 여부를 문서화합니다.
 
 <br/>
 
