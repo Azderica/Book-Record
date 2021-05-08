@@ -282,13 +282,49 @@ private void notifyElementAdded(E element) {
 
 <br/>
 
-## Item 80. 스레드보다는 executors, task, stream을 애용하라.
+## Item 80. 스레드보다는 executors, task, stream을 선호합니다.
 
 스레드를 직접 다룰 수 있지만, `concurrent` 패키지를 이용하면 간단하게 코드를 작성할 수 있습니다.
 
+### Executor Framework
+
+`java.util.concurrent` 패키지에는 인터페이스 기반의 유연한 태스크 실행 기능을 담은 실행자 프레임워크(Executor Framework)가 있습니다. 예를 들어 옛날에는 작업 큐를 작성하기 위해서 많은 코드를 작성했다면 현재는 간단하게 생성가능합니다.
+
+```java
+// 작업 큐 생성
+ExecutorService exec = Executors.newSingleThreadExecutor ();
+
+// 작업 큐 실행
+exec.execute(runnable);
+
+// 작업 큐 삭제
+exec.shutdown();
+```
+
+실행자 프레임워크는 여러 기능을 가지고 있습니다.
+
+| `method`                      | 설명                                        |
+| ----------------------------- | ------------------------------------------- |
+| `get`                         | 특정 태스크가 완료되기 까지를 기다림        |
+| `invokeAny`                   | 태스크 중 하나가 완료되는 것을 기다림       |
+| `invokeAll`                   | 모든 테스크가 종료되는 것을 기다림          |
+| `awaitTermination`            | 실행자 서비스가 종료하기를 기다림           |
+| `ExecutorCompletionService`   | 완료된 태스크들의 결과를 차례로 받음        |
+| `ScheduledThreadPoolExecutor` | 태스크를 특정 시간에 혹은 주기적으로 실행함 |
+
+- [출처](https://madplay.github.io/post/prefer-executors-tasks-and-streams-to-threads)
+
+둘 이상의 스레드가 대기열의 요청을 처리하도록 하려면 `ThreadPool`을 쓰면 됩니다.
+
+`Executors.newCachedThreadPool`은 가벼운 프로그램을 실행하는 서버에 적합합니다. 요청받은 task를 큐에 쌓지 않고 바로 처리하며, 사용 가능한 스레드가 없다면 즉시 스레드를 생성하여 처리합니다. 그러나 서버가 무겁다면 새로운 task가 도착할 때마다 다른스레드를 생성하기 때문에 최악입니다. 따라서, 무거운 프로덕션 서버에서는 `Executors.newFixedThreadPool`을 선택해서 스레드 개수를 고정하거나 `ThreadPoolExecutor`를 사용하는 것이 좋습니다.
+
+스레드를 직접 다루는 것은 항상 자제해야합니다. **일반적으로는 스레드를 직접 다루기 보다는 실행자와 프레임워크를 사용하는 것이 중요**합니다. 이렇게 사용하게 되면 작업 단위와 실행 매커니즘을 분리할 수 있습니다. (`Runnable`와 `Callable`)
+
+자바 7부터는 실행자 프레임워크는 `fork-join` task를 지원합니다. `ForkJoinTask`의 인스턴스는 작은 하위 task로 나눌 수 있고, `ForkJoinPool`을 구성하는 스레드들이 이 task들을 처리하며 일을 먼저 끝낸 스레드가 다른 스레드의 남은 task를 가져와서 대신 처리할 수도 있습니다. 이를 통해서 최대한의 CPU를 사용해서, 높은 처리량과 낮은 지연시간을 달성합니다.
+
 <br/>
 
-## Item 81. waite와 notify보다는 동시성 유틸리티를 애용하라.
+## Item 81. waite와 notify보다는 동시성 유틸리티를 선호합니다.
 
 이제는 `wait`와 `notify`보다 더 고수준디면 편리한 동시성 유틸리티를 사용합니다. `java.util.concurrent` 패키지의 고수준 유틸리티는 크게 실행자 프레임워크, 동시성 컬렉션, 동기화 장치로 나눌 수 있습니다.
 
