@@ -324,9 +324,36 @@ exec.shutdown();
 
 <br/>
 
-## Item 81. waite와 notify보다는 동시성 유틸리티를 선호합니다.
+## Item 81. `wait`와 `notify`보다는 동시성 유틸리티를 선호합니다.
 
-이제는 `wait`와 `notify`보다 더 고수준디면 편리한 동시성 유틸리티를 사용합니다. `java.util.concurrent` 패키지의 고수준 유틸리티는 크게 실행자 프레임워크, 동시성 컬렉션, 동기화 장치로 나눌 수 있습니다.
+이제는 `wait`와 `notify`보다 더 고수준이며 편리한 동시성 유틸리티를 사용하는 것이 좋습니다. `java.util.concurrent` 패키지의 고수준 유틸리티는 크게 실행자 프레임워크, 동시성 컬렉션, 동기화 장치로 나눌 수 있습니다.
+
+`java.util.concurrent` 패키지는 고수준의 동시성 유틸리티를 제공합니다. 크게 세가지로 분류하면, `Executor Framework`, `Concurrent Collections`, `Synchronizers`로 나눌 수 있습니다.
+
+앞에서 `Executor Framework`를 설명했으므로, `Concurrent Collections`과 `Synchronizers`에 대해 설명할 수 있습니다.
+
+`Concurrent Collections(동시 컬렉션)`와 같은 컬렉션 표준 인터페이스는 고성능의 동시성이 구현되어, `List`, `Queue`, `Map`등을 제공합니다. 이러한 구현은 내부적으로 동기화를 관리합니다. 그렇기 때문에 동시성 컬렉션에서 동시성을 제외하는 것은 불가능합니다. (외부에서 Lock을 사용하면 속도가 느려집니다.)
+
+동시성 컬렉션에서 동시 활동을 제외할 수 없기 때문에 이를 원자적으로 구성할 수 없습니다. 또한 이를 위해 여러 메서드등이 등장했습니다.
+
+예를 들어 `Map`의 `putIfAbsent(key, value)` 메서드가 대표적인 에시로 키가 없는 경우 매핑을 삽입합니다. 기존 값이 있으면 그 값을 반환하고 없는 경우에는 null을 반환하며, String의 `intern` 메서드를 아래처럼 흉내낼 수 있습니다.
+
+```java
+private static final ConcurrentMap<String, String> map =
+  new ConcurrentHashMap<>();
+
+public static String intern(String s) {
+  String result = map.get(s);
+  if (result == null) {
+    result = map.putIfAbsent(s, s);
+    if (result == null)
+      result = s;
+  }
+  return result;
+}
+```
+
+동기화된 컬렉션보다는 동시성 켈력션을 사용하는 것이 성능에 좋습니다. (Collections의 `synchronizedMap` 보다는 `ConcurrentHashMap`을 사용하는 것이 중요합니다.)
 
 <br/>
 
