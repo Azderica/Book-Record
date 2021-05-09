@@ -355,6 +355,63 @@ public static String intern(String s) {
 
 동기화된 컬렉션보다는 동시성 켈력션을 사용하는 것이 성능에 좋습니다. (Collections의 `synchronizedMap` 보다는 `ConcurrentHashMap`을 사용하는 것이 중요합니다.)
 
+`Synchronizers`를 통하면, 스레드가 다른 스레드를 기다릴 수 있게 해서 서로의 task를 조율할 수 있도록 해줍니다. 대표적으로는 `CountDownLatch`와 `Semaphore`, `CyclicBarrier`, `Exchanger`등이 있습니다. 그외에도 강력한 `Phaser`가 있습니다.
+
+`CountDownLatch`는 하나 이상의 스레드가 또 다른 하나 이상의 스레드 작업이 끝날때까지 기다립니다.
+
+```java
+// 동시 실행을 위한 간단한 프레임 워크
+public static long time(Executor executor, int concurrency,
+    Runnable action) throws InterruptedException {
+  CountDownLatch ready = new CountDownLatch(concurrency);
+  CountDownLatch start = new CountDownLatch(1);
+  CountDownLatch done  = new CountDownLatch(concurrency);
+
+  for (int i = 0; i < concurrency; i++) {
+    executor.execute(() -> {
+      ready.countDown(); // Tell timer we're ready
+      try {
+        start.await(); // Wait till peers are ready
+        action.run();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } finally {
+        done.countDown();  // Tell timer we're done
+      }
+    });
+  }
+
+  ready.await();     // Wait for all workers to be ready
+  long startNanos = System.nanoTime();
+  start.countDown(); // And they're off!
+  done.await();      // Wait for all workers to finish
+  return System.nanoTime() - startNanos;
+}
+```
+
+위 코드에서 실행자는 concurrency로 지정한 값 만큼 스레드를 생성할 수 있어야합니다. 그렇지 않으면 메스드 수행이 끝나지 않는데 이를 스레드 기아 교착 상태라고 합니다. 또, 시간을 잴 때는 `System.currentTimeMillis`보다는 시스템 시간과 무관한 `System.nanoTime`을 사용하는 것이 좋습니다.
+
+새로운 코드라면 `wait`, `notify`가 아닌 동시성 유틸리티를 사용해야합니다. 하지만, 이를 사용해야하는 상황이면 반드시 **동기화 영역 안에서만 사용해야하며, 항상 반복문 안에서 사용해야합니다.**
+
+```java
+synchronized (obj) {
+  while ({조건이 충족되지 않은 경우})
+    obj.wait(); // (락 넣어놓고, 깨어나면 잡습니다.)
+  ... // 조건이 충족됐을 때의 동작을 수행합니다.
+}
+```
+
+이러한 반복문은 `wait` 호출 전후로 조건이 만족하는 지를 검사하는 역할을 합니다. 대기전에 조건을 검사하여, 조건이 충족되었다면 `wait`를 건너뛰게 하는 것은 **응답 불가** 상태를 예방하는 것입니다. 조건이 충족되었는데 스레드가 `notify`나 `notifyAll` 메서드로 먼저 호출한 경우 대기 상태로 빠지면 그 스레드를 다시 깨우지 못합니다.
+
+한편 대기 후에 조건을 검사하여 조건을 충족하지 않았을 때 다시 대기하게 하는 것은 잘못된 값을 계산하는 **안전 실패**를 막기 위한 조치입니다. 그런데 조건이 만족되지 않아도 스레드가 깨어날수 있는 상황이 있습니다.
+
+- `notify`를 호출하여 대기 중인 스레드가 깨어나는 사이에 다른 스레드가 락을 거는 경우
+- 조건이 만족되지 않았으나 실수 혹은 악의적으로 `notify`를 호출하는 경우
+- 대기 중인 스레드 중 일부만 조건을 충족해도 `notifyAll`로 모든 스레드를 깨우는 경우
+- 대기 중인 스레드가 드물게 `notify` 없이 깨어나는 경우, 허위 각성(spurious wakeup)이라고 합니다.
+
+일반적으로는 `notify`보다는 `notifyAll`을 사용하는 것이 안전하며, `wait`는 `while`문 내부에서 호출하는 것이 중요합니다.
+
 <br/>
 
 ## Item 82. 스레드 안전성 수준을 문서화하라.
