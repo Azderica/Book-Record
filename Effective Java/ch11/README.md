@@ -414,7 +414,7 @@ synchronized (obj) {
 
 <br/>
 
-## Item 82. 스레드 안전성 수준을 문서화하라.
+## Item 82. 스레드 안전성 수준을 문서화합니다.
 
 문서에서 synchronized 수정자를 찾아서, 메서드가 스레드로부터 안전한지 알 수 있다는 말을 들을 수 있는데 이는 꼭 맞는 말은 아닙니다. 스레드 안전성에서도 어느 정도의 수준인지 나뉘므로 멀티스레드 환경에서도 안전하게 사용하려면 지원하는 스레드 안전성 수준을 명시해야합니다.
 
@@ -473,14 +473,81 @@ public void foo() {
 
 <br/>
 
-## Item 83. 지연 초기화는 신중히 사용하라
+## Item 83. 지연 초기화는 신중히 사용합니다.
 
-"필요할 때까지는 하지말라"라는 것이 결론입니다. 지연 초기화는 양날의 검입니다. 지연 초기화(lazy initialization)은 필드의 초기화 시점을 그 값이 처음 필요할 때까지 늦추는 기법인데 주로 최적화 용도로 사용됩니다.
+`Lazy initialization(지연 초기화)`는 값이 필요할 때까지 필드 초기화를 지연하는 행동입니다. 지연 초기화는 주로 최적화이지만, 클래스 및 인스턴스 초기화에서 유해한 순환성을 깨는데 사용할 수도 있습니다.
+
+지연 초기화는 일종의 양날의 검이기 때문에 필요하지 않으면 수행하지 않는 것이 중요합니다. 지연 초기화된 필드에 액세스하는 비용을 증가시키면서 클래스 초기화 또는 인스턴스 생성 비용을 줄입니다. 따라서 초기화된 필드에 자주 액세스하는지에 따라 성능을 저하시킬 수 있습니다.
+
+대부분의 경우에 지연 초기화보다는 정상적인 초기화가 좋습니다. 특히, 여러 스레드가 있는 경우에는 지연 초기화가 까다롭습니다.
+
+```java
+// 인스턴스 필드의 일반 초기화
+private final FieldType field = computeFieldValue();
+```
+
+지연 초기화가 초기화의 순환성을 깰 것 같으면 `synchronized`를 단 접근자를 이용하는 것이 중요합니다.
+
+```java
+// Lazy initialization of instance field - synchronized accessor
+private FieldType field;
+
+private synchronized FieldType getField() {
+  if (field == null)
+    field = computeFieldValue();
+  return field;
+}
+```
+
+성능 때문에 정적 필드를 초기화해야 한다면, **지연 초기화 홀더 클래스**를 사용하는 것이 좋습니다.
+
+```java
+private static class FieldHolder {
+  static final FieldType field = computeFieldValue();
+}
+
+private static FieldType getField() {
+  return FieldHolder.field;
+}
+```
+
+성능을 위해 인스턴스 필드를 지연 초기화해야하는 경우, **double-check(이중검사)** 관용구를 사용하는 것이 좋습니다.
+
+```java
+// 반드시 volatile 로 선언
+private volatile FieldType field;
+
+private FieldType getField() {
+  FieldType result = field;
+  if (result != null) // 첫 번째 검사(락 사용 안함)
+    return result;
+
+  synchronized(This) {
+    if (field == null) // 두 번째 검사(락 사용)
+      field = computeFieldValue();
+    return field;
+  }
+}
+```
+
+반복해서 초기화해도 상관 없는 인스턴스 필드를 지연 초기화할 때가 있는데 이를 때는 두 번째 검사를 생략해도 됩니다.
+
+```java
+// 반드시 volatile 로 선언
+private volatile FieldType field;
+
+private FieldType getField() {
+  FieldType result = field;
+  if (result == null)
+    field = result = computeFieldValue();
+  return result;
+}
+```
+
+만역 field 타입이 `long`이나 `double`이 아닌 다른 기본 타입이면 단일 검사의 필드 선언에서 `volatile`을 없앨 수도 있습니다.
+
+이를 요약하면 **대부분의 필드를 지연이 아니라 정상적으로 초기화해야합니다**. 성능을 위하거나 유해한 초기화 순환성을 깨기 위해 필드를 느리게 초기화해야하는 경우, 지연 초기화 기술을 사용해야합니다.
 
 <br/>
 
-## Item 84. 프래그램의 동작을 스레드 스케줄러에 기대지 말라.
-
-### 성능과 이식성이 좋은 프로그램
-
-### 스레드는 절대 바쁜 대기 상태가 되면 안됩니다.
+## Item 84. 프로그램의 동작을 스레드 스케줄러에 기대지 말라.
