@@ -10,7 +10,7 @@
 - [제너럴 프로그래밍](./ch9/README.md)
 - [예외](./ch10/README.md)
 - [동시성](./ch11/README.md)
-- Serialization
+- [직렬화](./ch12/README.md)
 
 향후 참고 git repository
 
