@@ -2,6 +2,8 @@
 
 아래에서는 자바 직렬화의 위험성과 이를 최소화하는 방법을 중점으로 합니다.
 
+- 자바 직렬화란.
+
 ## Item 85. 자바 직렬화의 대안을 찾습니다.
 
 자바의 직렬화는 위험합니다. 자바의 직렬화의 위험한 이유는 다음과 같습니다.
@@ -54,7 +56,7 @@ static byte[] bomb() {
 
 ### 직렬화 클래스의 단점
 
-#### 릴리즈 후에 수정이 어렵습니다.
+#### 1. 릴리즈 이후에는 유연성이 어렵습니다.
 
 `Serializable`을 구현하면 직렬화 형태도 하나의 공개 API가 됩니다. 직렬화 형태는 적용 당시 클래스의 내부 구현 방식에 종속적입니다. 또한 클래스의 private과 package 인스턴스 필드마저 API로 공개되기 때문에 캡슐화도 깨집니다.
 
@@ -62,11 +64,11 @@ static byte[] bomb() {
 
 한편 수정을 어렵게 만드는 요소로 `SerialVersionUID`를 뽑을 수 있습니다. 모든 직렬화된 클래스는 고유 식별 번호를 부여받으며, 클래스 내부에 직접 명시하지 않는 경우에 시스템이 런타임에 자동으로 생성됩니다. `SUID`를 생성할 때는 클래스의 이름, 구현하도록 선언한 인터페이스 등이 고려됩니다. 따라서 나중에 수정한다면 `SUID` 값도 변하게 됩니다. 이러한 자동으로 생성된 값은 호환성이 쉽게 깨집니다.
 
-#### 버그와 보안에 취약합니다.
+#### 2. 버그와 보안에 취약합니다.
 
 자바에서는 객체를 생성자를 통해서 만듭니다. 그러나 직렬화는 이러한 언어의 기본 방식을 우회하면서 객체를 생성합니다. 역직렬화는 일반 생성자의 문제가 발생하는 숨은 생성자입니다. 역직렬화를 사용하면 불변식이 깨질 수 있으며 허가되지 않은 접근에 쉽게 노출될 수 있습니다.
 
-#### 새로운 버전을 릴리즈할 때, 테스트 요소가 많습니다.
+#### 3. 테스트 부담 요소가 증가합니다.
 
 직렬화 가능한 클래스가 수정되면, 새로운 버전의 인스턴스를 직렬화 한후에 구버전으로 역직렬화가 가능한지 테스트해야합니다. 물론 그 반대 경우도 테스트 해야합니다.
 
@@ -90,11 +92,114 @@ private void readObjectNoData() throws InvalidObjectException {
 
 기본 직렬화 형태가 명확하지 않습니다. 내부 클래스는 바깥 인스턴스의 참조와 유효 범위에 속한 지역변수를 저장하기 위한 필드가 필요합니다. 이 필드들은 컴파일러가 자동으로 추가를 하는데, 이 필드들이 어떻게 추가될 지 모릅니다. (정적 멤버 클래스는 다릅니다.)
 
-`Serializab`
-
 <br/>
 
 ## Item 87. 커스텀 직렬화 형태를 고려합니다.
+
+### 커스텀 직렬화가 필요한 이유.
+
+클래스가 `Serializable` 을 구현하고 기본 직렬화 형태를 사용한다면 현재의 구현에 종속적이게 됩니다. 즉, 기본 직렬화 형태를 버릴 수 없게 됩니다. 따라서 유연성, 성능, 정확성과 같은 측면을 고민한 후에 합당하다고 생각되는 경우에 한해 기본 직렬화 형태를 사용해야합니다.
+
+### 이상적인 직렬화 형태
+
+기본 직렬화 형태는 객체가 포함한 데이터 뿐만 아니라, 그 객체를 시작으로 접근할 수 있는 모든 객체와 객체들의 연결된 정보까지 나타냅니다. 이상적인 직렬화의 형태는 물리적인 모습과 독립된 논리적인 모습만을 표현해야합니다. 객체의 물리적 표현과 논리적 내용이 같다면 기본 직렬화 형태를 선택해도 무방합니다.
+
+```java
+public class Name implements Serializable {
+
+  @serial
+  private final String lastName;
+
+  @serial
+  private final String firstName;
+
+  @serial
+  private final String middleName;
+
+  ...
+}
+```
+
+이름은 논리적으로 성, 이름, 중간 이름으로 3개의 문자열로 구성되는데 위 클래스의 인스턴스 필드들은 논리적인 구성 요소를 정확하게 반영합니다.
+
+기본 직렬화 형태가 적합해도 불변식 보장과 보안을 위해서 `readObject` 메서드를 제공해야하는 경우가 많습니다. 앞에 있는 코드의 경우, lastName과 firstName 필드는 null이 아님을 `readObject` 메서드가 보장해야합니다.
+
+### 부적절한 직렬화 형태
+
+객체의 물리적 표현과 논리적 내용이 같은 경우, 기본 직렬화 형태를 선택해도 됩니다. 그러나 적절하지 않는 경우도 있습니다.
+
+```java
+public final class StringList implements Serializable {
+  private int size = 0;
+  private Entry head = null;
+
+  private static class Entry implements Serializable {
+    String data;
+    Entry next;
+    Entry previous;
+  }
+
+  // ... 생략
+}
+```
+
+위의 클래스 경우에는 여러 문제점이 있습니다. 논리적으로 문자열을 표현했고 물리적으로는 문자열들을 이중 연결 리스트로 표현했습니다. 이 클래스에 기본 직렬화 형태를 사용하면 각 노드에 연결된 노드들까지 모두 표현하기 때문에 다음과 같은 문제가 발생합니다.
+
+- 공개 API가 현재의 내부 표현 방식에 종속적이게 됩니다.
+  - 향후 버전에서 연결 리스트를 사용하지 않더라도, 관련 처리가 필요해집니다.
+  - 코드를 제거할 수가 없습니다.
+- 사이즈가 큽니다
+  - 기본 직렬화를 사용할 때 각 노드의 연결 정보까지 모두 포함될 것입니다.
+  - 이는 내부 구현이며 직렬화 형태에 가치가 없으며 네트워크 전송 속도를 느리게 합니다.
+- 시간이 많이 걸립니다.
+  - 직렬화 로직은 객체 그래프의 위상에 관한 정보를 알 수 없으니, 직접 순회할 수 밖에 없습니다.
+- 스택 오버플로를 발생시킵니다.
+  - 기본 직렬화 형태는 객체 그래프를 재귀 순회하며, 호출 정도가 많아지면 스택이 감당을 하지 못합니다.
+
+### 합리적인 직렬화 형태
+
+이를 수정해서 합리적인 직렬화 형태는 다음과 같습니다. 단순히 리스트가 포함한 문자열의 개수와 문자열만 있는 것이 좋습니다. 위의 부적절한 코드를 개선한 형태입니다.
+
+```java
+public final class StringList implements Serializable {
+  private transient int size = 0;
+  private transient Entry head = null;
+
+  private static class Entry {
+    String data;
+    Entry next;
+    Entry previous;
+  }
+
+  public final void add(String s) { ... }
+
+  private void writeObject(ObjectOutputStream stream) throws IOException {
+    stream.defaultWriteObject();
+    stream.writeInt(size);
+
+    for (Entry e = head; e != null; e = e.next) {
+      s.writeObject(e.data);
+    }
+  }
+
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+    stream.defaultReadObject();
+    int numElements = stream.readInt();
+
+    for (int i = 0; i < numElements; i++) {
+      add((String) stream.readObject());
+    }
+  }
+
+  // ... 생략
+}
+```
+
+위 코드에서 특별한 키워드인 `transient`를 호가인할 수 있습니다. `transient` 키워드가 붙은 필드는 기본 직렬화 형태에 포함되지 않습니다. 클래스의 모든 필드가 `transient`로 선언되어 있더라도 `writeObject` 와 `readObject` 메서드는 `defaultWriteObject`와 `defaultReadObject` 메서드를 호출합니다. 직렬화 명세에서는 이 과정을 무조건 할 것을 요구합니다. 이렇게 함으로써 향후 릴리즈에서 `transient`가 아닌 필드가 추가되더라도 상위와 하위 모두 호환이 가능하기 때문입니다.
+
+신버전의 인스턴스를 직렬화하고 구버전으로 역직렬화할시, 새로 추가된 필드는 무시됩니다. 그리고 구버전의 `readObject` 메서드에서 `defaultReadObject`를 호출하지 않는다면 역직렬화 과정에서 `StreamCorruptedException`이 발생할 것입니다.
+
+... 추가 작성 예정.
 
 <br/>
 
