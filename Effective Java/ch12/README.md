@@ -199,7 +199,26 @@ public final class StringList implements Serializable {
 
 신버전의 인스턴스를 직렬화하고 구버전으로 역직렬화할시, 새로 추가된 필드는 무시됩니다. 그리고 구버전의 `readObject` 메서드에서 `defaultReadObject`를 호출하지 않는다면 역직렬화 과정에서 `StreamCorruptedException`이 발생할 것입니다.
 
-... 추가 작성 예정.
+기본 직렬화 여부에 관계없이 `defaultWriteObject` 메서들 호출하면 `transient`로 선언하지 않은 모든 필드는 직렬화됩니다. 따라서, `transient` 키워드를 선언해도 되는 필드라면 붙이는 것이 좋습니다. 즉, 논리적 상태와 무관한 필드라고 판단될 때 생략하는 것이 좋습니다.
+
+기본 직렬화를 사용한다면, 역직렬화를 할 때는 `transient` 필드는 기본 값으로 초기화됩니다. 기본 값을 변경해야 하는 경우에는 `readObject` 메서드에서 `defaultReadObject` 메서드를 호출한 다음 원하는 값으로 지정하면 됩니다. 아니면 값을 처음 사용할 때 초기화해도 됩니다.
+
+기본 직렬화 사용 여부와 상관없이 직렬화에도 동기화 규칙을 적용해야합니다. 예를 들어 모든 메서드를 `synchronized` 로 선언하여 스레드에 안전하게 만든 객체에 기본 직렬화를 사용한다면 `writeObject` 도 아래처럼 수정해야 합니다.
+
+```java
+private synchronized void writeObject(ObjectOutputStream stream) throws IOExceptions {
+  stream.defaultWriteObject();
+}
+```
+
+어떤 직렬화 형태를 선택하더라도, 직렬화가 가능한 클래스에는 `SerialVersionUID(SUID)` 를 명시적으로 선언해야 합니다. 물론 선언하지 않더라도 자동 생성되지만 런타임에 이 값을 생성하느라 복잡한 연산을 수행해야합니다.
+
+```java
+// 무작위로 고른 long 값
+private static final long serialVersionUID = 0204L;
+```
+
+다만, SUID가 꼭 유니크할 필요가 없습니다. 다만 이 값이 변경되면 기존 버전 클래스와의 호환을 끊게 됩니다. 따라서 호환성을 끊는 경우가 아니라면 SUID 값을 변경해서는 안됩니다.
 
 <br/>
 
