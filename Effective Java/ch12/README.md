@@ -224,6 +224,185 @@ private static final long serialVersionUID = 0204L;
 
 ## Item 88. `readObject` 메서드는 방어적으로 작성합니다.
 
+지난 Item 50에서는 적시에 방어적 복사본을 만들라는 규칙이 있습니다.
+
+```java
+public final class Period {
+  private final Date start;
+  private final Date end;
+
+  /**
+   * @param  start the beginning of the period
+   * @param  end the end of the period; must not precede start
+   * @throws IllegalArgumentException if start is after end
+   * @throws NullPointerException if start or end is null
+   */
+  public Period(Date start, Date end) {
+    this.start = new Date(start.getTime());
+    this.end   = new Date(end.getTime());
+    if (this.start.compareTo(this.end) > 0) throw new IllegalArgumentException(
+      start + " after " + end);
+  }
+
+  public Date start () { return new Date(start.getTime()); }
+
+  public Date end () { return new Date(end.getTime()); }
+
+  public String toString() { return start + " - " + end; }
+
+  ... // Remainder omitted
+}
+```
+
+물리적 표현과 논리적 표현이 같기 때문에 기본 직렬화 형태를 사용해도 된다고 판단됩니다. 따라서 `Serializable`만 구현하면 될 것 같습니다. 하지만 `readObject`가 새로운 public 생성자이기 때문에 불변식을 보장할 수 없ㅅㅂ니다.
+
+`readObject` 메서드도 생성자와 같은 수준으로 주의해야합니다. 인수가 유효한지 검사하고, 매개변수를 방어적으로 복사해야합니다. 그렇지 않으면 불변식을 깨뜨리는 공격에 취약적으로 됩니다.
+
+`readObject` 메서드는 매개변수로 바이트 스트림을 받는 생성자로 볼 수 있습니다. 일반적으로 보통 바이트 스트림은 정상적으로 생성된 인스턴스를 직렬화해서 만들어집니다. 하지만, 불변을 깨트릴 목표로 만들어진 바이트 스트림을 받으면 문제가 발생합니다. 이러한 경우는 정상적으로 만들어 낼 수 없는 객체를 생성합니다.
+
+아래는 그 잘못된 코드입니다.
+
+```java
+public class BogusPeriod {
+
+  // Byte stream couldn't have come from a real Period instance!
+  private static final byte[] serializedForm = {
+    (byte)0xac, (byte)0xed, 0x00, 0x05, 0x73, 0x72, 0x00, 0x06,
+    0x50, 0x65, 0x72, 0x69, 0x6f, 0x64, 0x40, 0x7e, (byte)0xf8,
+    0x2b, 0x4f, 0x46, (byte)0xc0, (byte)0xf4, 0x02, 0x00, 0x02,
+    ...
+  };
+
+  public static void main(String[] args) {
+    Period p = (Period) deserialize(serializedForm);
+    System.out.println(p);
+  }
+
+  // 바이트 스트림으로부터 객체를 만들어 변환합니다.
+  static Object deserialize(byte[] sf) {
+    try {
+      return new ObjectInputStream(
+        new ByteArrayInputStream(sf)
+      ).readObject();
+    } catch (IOException | ClassNotFoundException e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
+}
+```
+
+해당 코드를 실행하면, 불변식이 깨지는 객체가 만들어집니다.
+
+```
+Fri Jan 01 12:00:00 PST 1999 - Sun Jan 01 12:00:00 PST 1984
+```
+
+이를 방어하기 위해서는 `readObject` 메서드가 `defaultReadObject`를 호출하게 한 후 역직렬화된 객체가 유효한지 검사해야합니다. 여기서 유효성 검사에 실패한다면 `InvalidObjectException`을 던져 잘못된 역직렬화가 발생하는 것을 막아야합니다.
+
+```java
+private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+  // 불변식을 만족하는지 검사한다.
+  if (start.compareTo(end) > 0) {
+    throw new InvalidObjectException(start + "after" + end);
+  }
+}
+```
+
+그러나 이러한 코드에서도 바이트 스트림 끝에 `private Date` 필드로의 참조를 추가하면 가변적인 Period 인스턴스를 만들어 낼 수 있습니다. 공격자가 역직렬화를 통해서 바이트 스트림 끝의 참조 값을 읽으면 Period의 내부 정보를 얻을 수 있습니다. 이 참조를 이용해서 인스턴스를 수정할 수 있기 때문에 불변이 아닙니다.
+
+```java
+public class MutablePeriod {
+  public final Period period;
+  public final Date start;
+  public final Date end;
+
+  public MutablePeriod() {
+    try {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      ObjectOutputStream out = new ObjectOutputStream(bos);
+
+      out.writeObject(new Period(new Date(), new Date()));
+
+      /*
+       * 악의적인 '이전 객체 참조', 즉 내부 Date 필드로의 참조를 추가한다.
+       * 상세 내용은 자바 객체 직렬화 명세의 6.4절 참조.
+       */
+      byte[] ref = { 0x71, 0, 0x7e, 0, 5 };
+      bos.write(ref); // 시작(start) 필드
+      ref[4] = 4; // 참조 #4
+      bos.write(ref); // 종료(end) 필드
+
+      ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
+      period = (Period) in.readObject();
+      start = (Date) in.readObject();
+      end = (Date) in.readObject();
+    } catch (IOException | ClassNotFoundException e) {
+      throw new AssertionError(e);
+    }
+  }
+
+  public static void main(String[] args) {
+    MutablePeriod mp = new MutablePeriod();
+    Period p = mp.period;
+    Date pEnd = mp.end;
+
+    // 시간을 되돌린다.
+    pEnd.setYear(78);
+    System.out.println(p);
+
+    // 60년대로 돌아간다.
+    pEnd.setYear(69);
+    System.out.println(p);
+  }
+}
+```
+
+```
+Wed Nov 22 00:21:29 PST 2017 - Wed Nov 22 00:21:29 PST 1978
+Wed Nov 22 00:21:29 PST 2017 - Sat Nov 22 00:21:29 PST 1969
+```
+
+해당 원인은 `Period`의 `readObject` 메서드가 방어적 복사를 하지 않음에 있습니다. **역직렬화를 할 때는 클라이언트가 접근해서는 안되는 객체 참조를 갖는 필드는 모두 방어적으로 복사를 해야합니다.**
+
+`Period`를 공격으로부터 보호하기 위해 방어적 복사를 유효성 검사보다 먼저 수행해야합니다. 또한 Date의 `clone` 메서드는 사용되지 않습니다.
+
+```java
+private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+  s.defaultReadObject();
+
+  // 가변 요소들을 방어적으로 복사한다.
+  start = new Date(start.getTime());
+  end = new Date(end.getTime());
+
+  // 불변식을 만족하는지 검사한다.
+  if (start.compareto(end) > 0) {
+    throw new InvalidObjectException(start + " after " + end);
+  }
+}
+```
+
+```
+Fri May 31 01:01:06 KST 2019 - Fri May 31 01:01:06 KST 2019
+Fri May 31 01:01:06 KST 2019 - Fri May 31 01:01:06 KST 2019
+```
+
+한편 `final` 필드는 방어적 복사가 불가능하니 주의해야합니다. 따라서 start와 end 필드에서 `final` 키워드를 제거해야합니다. 공격을 받는 것보다는 더 나은 방향입니다.
+
+`transient` 필드를 제외한 모든 필드의 값을 매개변수로 받아 유효성 검사를 없이도 필드에 대입하는 public 생성자를 추가해도 괜찮다고 판단되면 기본 `readObject`를 사용해도 됩니다. 아닌 경우에는 직접 `readObject` 메서드를 정의해서 생성자에서 수행했어야 할 모든 유효성 검사와 방어적 복사를 수행해야합니다. 이때 가장 추천되는 것은 `직렬화 프록시 패턴`을 사용하는 것입니다. 이는 역직렬화를 안전하게 만드는데 필요한 노력을 줄여줍니다,
+
+`final`이 아닌 직렬화 가능 클래스라면 생성자처럼 `readObject` 메서드도 재정의(Overriding) 가능한 메서드를 호출해서는 안됩니다. 하위 클래스의 상태가 완전히 직렬화되기 전에 하위 클래스에서 재정의된 메서드가 실행되기 때문입니다.
+
+결론적으로 다음과 같이 요약할 수 있습니다.
+
+- `readObject` 메서드를 작성할 때는 언제나 public 생성자를 작성하는 자세로 임합니다.
+- `readObject` 메서드는 어떤 바이트 스트림이 넘어오더라도 유효한 인스턴스를 만들어야합니다.
+  - 이 바이트 스트림이 항상 직렬화된 인스턴스라고 믿으면 안됩니다.
+- 안전한 `readObject` 메서드를 작성하기 위해서는 아래를 준수합니다.
+  - `private` 여야 하는 객체 참조 필드는 각 필드가 가리키는 객체를 방어적으로 복사합니다.
+  - 모든 불변식을 검사하고 어긋난다면, `InvalidObjectException`을 던집니다.
+  - 역직렬화 이후에 객체 그래프 전체의 유효성을 검사해야 한다면 `ObjectInputValidation`을 던집니다.
+  - 오버라이딩이 가능한 메서드는 호출하지 않는 것이 좋습니다.
+
 <br/>
 
 ## Item 89. 인스턴스 수를 통제해야한다면 `readResolve`보다는 열거 타입을 사용합니다.
