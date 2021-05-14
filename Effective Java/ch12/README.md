@@ -407,6 +407,41 @@ Fri May 31 01:01:06 KST 2019 - Fri May 31 01:01:06 KST 2019
 
 ## Item 89. 인스턴스 수를 통제해야한다면 `readResolve`보다는 열거 타입을 사용합니다.
 
+앞에서 싱글톤 패턴의 예저를 보았는데 이 방법은 `public static final` 필드를 사용하는 방식입니다. 생성자는 `private` 접근 지정자로 선언하여 외부로부터 감추고, `INSTANCE`를 초기화할 때 한 번만 호출됩니다.
+
+```java
+private class Elvis {
+  public static final Elvis INSTANCE = new Elvis();
+  private Elvis() { }
+
+  ...
+}
+```
+
+하지만, 이 클래스는 `Serializable`을 구현하게 되는 순간 싱글턴이 아닙니다. 기본 직렬화를 쓰지 않거나 명시적인 `readObject` 메서드를 제공해도 소용이 없습니다. 어떤 `readObject` 메서드를 사용해도 초기화될 때 만들어진 인스턴스와 다른 인스턴스를 반환하게 됩니다.
+
+이때 `readResolve` 메서드를 사용하면, `readObject` 메서드가 만든 인스턴스를 다른 것으로 대체할 수 있습니다. 이때 `readObject`가 만들어낸 인스턴스는 가비지 컬렉터의 대상이 됩니다.
+
+```java
+private Object readResolve() {
+  return INSTANCE;
+}
+```
+
+한편 여기서 나온 `Elvis` 인스턴스의 직렬화 형태는 아무런 실 데이터를 가질 필요가 없으니 모든 인스턴스 필드는 `transient`로 선언해야합니다. 그러므로 `readResolve` 메서드를 인스턴스의 통제 목적으로 이용한다면 모든 필드는 `transient`로 선언하는 것이 좋습니다. 그렇지 않으면 역직렬화 과정에서 역직렬화된 인스턴스를 가져와서 싱글턴이 깨지게 됩니다.
+
+이를 해결하는 방법은 `enum`입니다. 자바가 선언한 상수 외에 다른 객체가 없음을 보장해주기 때문입니다. 물론 `AccessibleObject.setAccessible` 메서드와 같은 리플렉션을 사용하는 경우는 예외입니다.
+
+```java
+public enum Elvis {
+  INSTANCE;
+
+  ...
+}
+```
+
+물론 인스턴스 통제를 위해 `readResolve` 메서드를 사용하는 것이 중요할 대도 있습니다. 직렬화 가능 인스턴스 통제 클래스를 작성해야 할 때, 컴파일 타임에는 어떤 인스턴스들이 있는지 모를 수 있습니다. 이때는 `Enum` 타입으로 표현하는 것이 불가능하기 때문에 `readResolve` 메서드를 사용할 수 밖에 없습니다.
+
 <br/>
 
 ## Item 90. 직렬화된 인스턴스 대신 직렬화 프록시 사용을 검토합니다.
