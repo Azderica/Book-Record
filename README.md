@@ -7,6 +7,7 @@
 ## Java
 
 - [Effective Java](./Effective%20Java/README.md)
+- [Optimizing Java](./Optimizing%20Java/README.md)
 
 ## Spring
 

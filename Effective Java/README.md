@@ -1,3 +1,7 @@
+# 이펙티브 자바.
+
+## 목차
+
 다음의 목차 순으로 진행합니다.
 
 - [객체 생성과 삭제](./ch2/README.md)
@@ -12,6 +16,6 @@
 - [동시성](./ch11/README.md)
 - [직렬화](./ch12/README.md)
 
-향후 참고 git repository
+## 향후 참고 git repository
 
 - [effective java 3rd source code](https://github.com/WegraLee/effective-java-3e-source-code)
