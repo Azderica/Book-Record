@@ -80,6 +80,10 @@ JIT 방식으로 컴파일하면 여러모로 이점이 많습니다.
 
 자바처럼 프로필 기반 최적화(PGO, Profile-guided optimization)을 응용하는 환경에서 대부분의 AOT 컴파일러(Ahead-Of Time Compile) 플랫폼에서 불가능한 방식으로 런타임 정보를 활용할 여지가 있으며, 동적 인라이닝(dynamic inlining) 또는 가상 호출(virtual call) 등으로 성능을 개선할 수 있습니다. 핫스팟 VM은 시동시 CPU 타입을 정확하게 감지해 가능하면 특정 프로세서의 기능에 맞게 최적화를 적용가능합니다.
 
+JVM 인트린직(intrinsics, 내장 함수)
+
+- 프로세서 기능을 정밀하게 감지하는 기법
+
 <br/>
 
 ## JVM 메모리 관리
