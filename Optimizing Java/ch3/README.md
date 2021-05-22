@@ -14,6 +14,58 @@
 
 이를 통해서 프로세서 처리율이 높아졌으나, 캐시한 데이터를 어떻게 메모리에 다시 써야 할지 결정해야합니다. 이 문제를 해결하기 위해서 `캐시 일관성 프로토콜(cache consistency protocol)` 라는 방법으로 해결합니다.
 
+프로세서의 가장 저수준에서 MESI 프로토콜을 사용하는데 이 MESI 프로토콜은 캐시 라인 상태를 네가지로 정리합니다.
+
+- Modified(수정): 데이터가 수정된 상태
+- Exclusive(배타): 이 캐시에만 존재하고 메인 메모리 내용과 동일한 상태
+- Shared(공유): 둘 이상의 캐시에 데이터가 들어 있고 메모리 내용과 동일한 상태
+- Invalid(무효): 다른 프로세스가 데이터를 수정하여 무효한 상태
+
+정리하자면, 멀리 프로세서는 동시에 공유 상태로 존재할 수 있습니다. 하지만 어느 한 프로세서가 배타나 수정 상태로 바뀌면 다른 프로세서는 강제로 무효상태가 됩니다.
+
+이러한 캐시 스킬을 통해서, 데이터를 신속하게 메모리에서 쓰고 읽을 수 있게 되었습니다.
+
+캐시 하드웨어의 작동 원리 코드를 살펴볼 수 있습니다.
+
+```java
+public class Caching {
+  private Final int ARR_SIZE = 2 * 1024 * 1024;
+  private Final int[] testData = new int[ARR_SIZE];
+
+  private void run() {
+    System.err.println("Start: "+ System.currentTimeMillis());
+    for (int i = 0; i < 15_000; i++) {
+      touchEveryLine();
+      touchEveryItem();
+    }
+    System.err.println("Warmup Finished: "+ System.currentTimeMillis());
+    System.err.println("Item Line");
+
+    for (int i = 0; i < 100; i++) {
+      long t0 = System.nanoTime();
+      touchEveryLine();
+      long t1 = System.nanoTime();
+      touchEveryItem();
+      long t2 = System.nanoTime();
+      long elItem = t2 - t1;
+      long elLine = t1 - t0;
+      double diff = elItem - elLine;
+      System.err.println(elItem + " " + elLine +" "+ (100 \* diff / elLine));
+    }
+  }
+
+  private void touchEveryItem() {
+    for (int i = 0; i < testData.length; i++)
+      testData[i]++;
+  }
+
+  private void touchEveryLine() {
+    for (int i = 0; i < testData.length; i += 16)
+      testData[i]++;
+  }
+}
+```
+
 <br/>
 
 ## 최신 프로세서의 특성
