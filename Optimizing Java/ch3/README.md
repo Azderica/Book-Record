@@ -63,8 +63,17 @@ public class Caching {
     for (int i = 0; i < testData.length; i += 16)
       testData[i]++;
   }
+
+  public static void main(String[] args) {
+    Caching c = new Caching();
+    c.run();
+  }
 }
 ```
+
+위 코드를 실행하면, `touchEveryItem()` 메서드가 `touchEveryLine()` 메서드보다 더 많은 일을 할 것 같지만, 소요시간은 비슷합니다. 그 이유는 메모리 버스를 예열시키는 부분이 가장 큰 영향이 미쳐서 그렇습니다.
+
+즉, 자바 성능을 논할 때는 객체 할당률에 따른 애플리케이션 민감도가 중요합니다.
 
 <br/>
 
